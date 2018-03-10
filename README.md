@@ -1,26 +1,19 @@
 # matplottery
 
+Nice and simple histogram plotting with matplotlib, including easy importing of ROOT histograms. See the following sections for examples.
+
 ```python
 import plotter
-
-%matplotlib inline
-# %matplotlib notebook
-
-
 import numpy as np
-np.random.seed(42)
-
 from utils import Hist1D, MET_LATEX
-
 import matplotlib as mpl
-
 ```
 
-# Histogram objects
+## Histogram objects
 
 The `Hist1D` object wraps a numpy array or a ROOT histogram into a common histogram object, so ROOT histograms can be easily swapped with numpy array histograms. A histogram object is simply a set of bin counts, errors, and edges.
 
-## Creation from numpy arrays
+### Creation from numpy arrays
 Instantiate a `Hist1D` object with a numpy array and a binning scheme. Then print it. The `__repr__` shows bin counts and errors, which are Poissonian by default. Note that other kwargs to `Hist1D` get passed to a `np.histogram()` call, so you retain the full functionality of numpy. Bin counts, edges, etc. are all stored in numpy arrays, so operations on these are optimized.
 
 
@@ -36,7 +29,7 @@ print h1
     >
 
 
-## Creation from ROOT histograms
+### Creation from ROOT histograms
 Take a histogram from ROOT and turn it into a `Hist1D`. Bin contents, edges, and errors are carried over and now you have a nice `Hist1D` object.
 
 
@@ -56,7 +49,7 @@ print h1
     >
 
 
-## Math
+### Math
 Now that we've made these histogram objects, what can we do? Math. Errors are propagated with gaussian rules.
 
 
@@ -90,7 +83,7 @@ print hratio.get_errors_down()
      0.07376561 0.12489368        nan]
 
 
-# Plotting
+## Plotting
 
 Now that we have these histogram objects, we can start making plots. Start off with a very simple 3 line example. First, make a couple of Hist1D objects, and use the `label` kwarg to store extra information in the object (which will become a legend label eventually).
 
@@ -117,7 +110,7 @@ plotter.plot_stack([h1,h2])
 ![png](images/output_11_1.png)
 
 
-### Colors and ratios
+#### Colors and ratios
 You can also attach a color to `Hist1D` objects. Any kind of matplotlib-acceptable color works, as you see from the different types below. The `plot_stack` call has more options here for labels. `mpl_hist_params` is a dictionary of kwargs that get passed to the `hist` draw call in matplotlib, so customization is straightforward (and not complicated, because options can be found in the matplotlib documentation).
 
 Additionally, there is a `ratio` option. Using the math capabilities of the `Hist1D` objects, you can specify an arbitrary ratio to show in a panel below the main pad. This pad shows up if you specify data in the `plot_stack` call, or explicitly give a `ratio` parameter.
@@ -154,7 +147,7 @@ plotter.plot_stack(
 ![png](images/output_13_1.png)
 
 
-### More options
+#### More options
 Here is an example of two unstacked histograms (one is a subset of the other) with an "efficiency" ratio (with asymmetric errors) below.
 
 
@@ -188,7 +181,7 @@ plotter.plot_stack(
 ![png](images/output_15_1.png)
 
 
-### More bells and whistles
+#### More bells and whistles
 
 Here's a more "realistic" (but still fake) plot. This time, a signal histogram is included. Note the `mpl_figure_params` dictionary. These are kwargs to the `plt.figure()` call. It's used here to specify the figure size since Jupyter hijacks it and creates small figures, which would cause the legend to overlap with many things.
 
@@ -210,15 +203,15 @@ for label, color in bginfo:
     bg = Hist1D(np.random.normal(5.8,2,30), bins=np.linspace(0,15,15), label=label, color=color)
     bgs.append(bg)
 
-# fake data
+## fake data
 data = Hist1D(np.random.normal(5.8,2,240), bins=bgs[0].get_edges(), color="k", label="Data")
 
-# get sig and scale by 5
+## get sig and scale by 5
 label_sig = "$t\\bar{t}t\\bar{t} \\times 5$"
 sig = Hist1D(np.random.normal(10.5,1.5,500), weights=0.02*np.ones(500), bins=np.linspace(0,15,15), label=label_sig,color="r")
 sig *= 5
 
-# labels
+## labels
 title = "Discriminator"
 xlabel = "{} [GeV]".format(MET_LATEX)
 ylabel = "Events"
@@ -249,13 +242,13 @@ plotter.plot_stack(
 ![png](images/output_17_1.png)
 
 
-### Plot styles
+#### Plot styles
 Various matplotlib styles can be used. Can't guarantee that they all look pretty out of the box, but the plotter works with matplotlib's style contexts. You can also write out the figure to a file via the `filename` argument.
 
 
 ```python
 with mpl.pyplot.style.context("ggplot"):
-# with mpl.pyplot.style.context('fivethirtyeight'):
+## with mpl.pyplot.style.context('fivethirtyeight'):
     plotter.plot_stack(
         bgs=bgs,
         data=data,
