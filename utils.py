@@ -178,6 +178,15 @@ class Hist1D(object):
 
     __rmul__ = __mul__
 
+    def __pow__(self, expo):
+        if type(expo) in [float,int]:
+            with np.errstate(divide="ignore",invalid="ignore"):
+                self._counts = self._counts ** expo
+                self._errors *= self._counts**(expo-1) * expo
+            return self
+        else:
+            raise Exception("Can't multiply histogram by non-scalar")
+
     def __repr__(self):
         use_ascii = False
         if use_ascii: sep = "+-"
