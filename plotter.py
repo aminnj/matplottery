@@ -1,3 +1,4 @@
+import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ import utils
 def set_defaults():
     from matplotlib import rcParams
     rcParams['font.family'] = 'sans-serif'
-    rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans'
+    rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans, Liberation Sans'
     rcParams['legend.fontsize'] = 'large'
     rcParams['axes.labelsize'] = 'x-large'
     rcParams['axes.titlesize'] = 'x-large'
@@ -24,7 +25,8 @@ def add_cms_info(ax, typ="Simulation", lumi="75.0"):
 
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
-        mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={}, mpl_figure_params={},
+        mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
+        mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         ):
     set_defaults()
@@ -90,7 +92,10 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     ax_main.set_title(title)
     ax_main.legend(
             handler_map={ matplotlib.patches.Patch: utils.TextPatchHandler(label_map) },
+            **mpl_legend_params
             )
+    ylims = ax_main.get_ylim()
+    ax_main.set_ylim([0.0,ylims[1]])
 
     if cms_type is not None:
         add_cms_info(ax_main, cms_type, lumi)
@@ -106,20 +111,22 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
 
         mpl_opts_ratio = {
-                "yerr": ratios.get_errors()
+                "yerr": ratios.get_errors(),
+                "label": "Data/MC",
                 # "xerr": data_xerr,
                 }
         if ratios.get_errors_up() is not None:
             mpl_opts_ratio["yerr"] = [ratios.get_errors_down(),ratios.get_errors_up()]
 
-        mpl_opts_ratio.update(mpl_ratio_params)
         mpl_opts_ratio.update(mpl_data_hist)
+        mpl_opts_ratio.update(mpl_ratio_params)
 
         ax_ratio.errorbar(ratios.get_bin_centers(),ratios.get_counts(),**mpl_opts_ratio)
         ax_ratio.set_autoscale_on(False)
         ylims = ax_ratio.get_ylim()
         ax_ratio.plot([ax_ratio.get_xlim()[0],ax_ratio.get_xlim()[1]],[1,1],color="gray",linewidth=1.,alpha=0.5)
         ax_ratio.set_ylim(ylims)
+        ax_ratio.legend()
         # ax_ratio.set_ylim([0.,1.])
 
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
@@ -127,6 +134,12 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
 
     if filename:
+        fig.tight_layout()
+
+        dirname = os.path.dirname(filename)
+        if dirname and not os.path.isdir(dirname):
+            os.system("mkdir -p {}".format(dirname))
+
         fig.savefig(filename)
 
     return fig, fig.axes
