@@ -1,5 +1,7 @@
+import array
 import matplotlib
 import numpy as np
+import copy
 
 MET_LATEX = "E$\\!\\!\\! \\backslash{}_\\mathrm{T}$"
 
@@ -16,6 +18,25 @@ def clopper_pearson_error(passed, total, level=0.6827):
     low = scipy.stats.beta.ppf(alpha, passed, total-passed+1)
     high = scipy.stats.beta.ppf(1 - alpha, passed+1, total-passed)
     return low, high
+
+def fill_fast(hist, xvals, yvals=None, weights=None):
+    """
+    partially stolen from root_numpy implementation
+    using for loop with TH1::Fill() is slow, so use
+    numpy to convert array to C-style array, and then FillN
+    """
+    two_d = False
+    if yvals is not None:
+        two_d = True
+        yvals = array.array("d", yvals)
+    if weights is None:
+        weights = np.ones(len(xvals))
+    xvals = array.array("d", xvals)
+    weights = array.array("d",weights)
+    if not two_d:
+        hist.FillN(len(xvals),xvals,weights)
+    else:
+        hist.FillN(len(xvals),xvals,yvals,weights)
 
 class TextPatchHandler(object):
     def __init__(self, label_map={}):
@@ -53,8 +74,13 @@ class Hist1D(object):
             self.init_root(obj,**kwargs)
         elif "uproot" in tstr:
             self.init_uproot(obj,**kwargs)
-        elif "ndarray" in tstr:
+        elif "ndarray" in tstr or "list" in tstr:
             self.init_numpy(obj,**kwargs)
+
+    def copy(self):
+        hnew = Hist1D()
+        hnew.__dict__.update(copy.deepcopy(self.__dict__))
+        return hnew
 
     def init_numpy(self, obj, **kwargs):
         if "errors" in kwargs:
@@ -121,9 +147,17 @@ class Hist1D(object):
     def _check_consistency(self, other):
         if len(self._edges) != len(other._edges):
             raise Exception("These histograms cannot be combined due to different binning")
+        return True
+
+    def __eq__(self, other):
+        if not self._check_consistency(other): return False
+        eps = 1.e-6
+        return np.all(self._counts - other.get_counts() < eps) \
+            and np.all(self._edges - other.get_edges() < eps) \
+            and np.all(self._errors - other.get_errors() < eps)
 
     def __add__(self, other):
-        if self._counts is None: 
+        if self._counts is None:
             return other
         self._check_consistency(other)
         hnew = Hist1D()
@@ -143,7 +177,10 @@ class Hist1D(object):
         return hnew
 
     def __div__(self, other):
-        return self.divide(other)
+        if type(other) in [float,int]:
+            return self.__mul__(1.0/other)
+        else:
+            return self.divide(other)
 
     def divide(self, other, binomial=False):
         self._check_consistency(other)
@@ -170,9 +207,10 @@ class Hist1D(object):
 
     def __mul__(self, fact):
         if type(fact) in [float,int]:
-            self._counts *= fact
-            self._errors *= fact**0.5
-            return self
+            hnew = self.copy()
+            hnew._counts *= fact
+            hnew._errors *= fact
+            return hnew
         else:
             raise Exception("Can't multiply histogram by non-scalar")
 
@@ -180,10 +218,11 @@ class Hist1D(object):
 
     def __pow__(self, expo):
         if type(expo) in [float,int]:
+            hnew = self.copy()
             with np.errstate(divide="ignore",invalid="ignore"):
-                self._counts = self._counts ** expo
-                self._errors *= self._counts**(expo-1) * expo
-            return self
+                hnew._counts = hnew._counts ** expo
+                hnew._errors *= hnew._counts**(expo-1) * expo
+            return hnew
         else:
             raise Exception("Can't multiply histogram by non-scalar")
 
@@ -195,7 +234,7 @@ class Hist1D(object):
         # so we convert value,error into a complex number and format that 1D array :)
         formatter = {"complex_kind": lambda x:"%5.2f {} %4.2f".format(sep) % (np.real(x),np.imag(x))}
         a2s = np.array2string(self._counts+self._errors*1j,formatter=formatter, suppress_small=True, separator="   ")
-        return "<Hist1D:\n{}\n>".format(a2s)
+        return "<{}:\n{}\n>".format(self.__class__.__name__,a2s)
 
     def set_attr(self, attr, val):
         self._extra[attr] = val
@@ -205,3 +244,57 @@ class Hist1D(object):
 
     def get_attrs(self):
         return self._extra
+
+class Hist2D(Hist1D):
+
+    def init_numpy(self, obj, **kwargs):
+        if "errors" in kwargs:
+            self._errors = kwargs["errors"]
+            del kwargs["errors"]
+
+        counts, edgesx, edgesy = np.histogram2d(obj[:,0], obj[:,1],**kwargs)
+        # each row = constant y, lowest y on top
+        self._counts = counts.T
+        self._edges = edgesx, edgesy
+        self._counts = self._counts.astype(np.float64)
+
+        # poisson defaults if not specified
+        if self._errors is None:
+            self._errors = np.sqrt(self._counts)
+        self._errors = self._errors.astype(np.float64)
+
+    def init_root(self, obj, **kwargs):
+        xaxis = obj.GetXaxis()
+        yaxis = obj.GetYaxis()
+        low_edges_x = np.array([1.0*xaxis.GetBinLowEdge(ibin) for ibin in range(xaxis.GetNbins()+1)])
+        bin_widths_x = np.array([1.0*xaxis.GetBinWidth(ibin) for ibin in range(xaxis.GetNbins()+1)])
+        low_edges_y = np.array([1.0*yaxis.GetBinLowEdge(ibin) for ibin in range(yaxis.GetNbins()+1)])
+        bin_widths_y = np.array([1.0*yaxis.GetBinWidth(ibin) for ibin in range(yaxis.GetNbins()+1)])
+        counts, errors = [], []
+        for iy in range(1,obj.GetNbinsY()+1):
+            counts_y, errors_y = [], []
+            for ix in range(1,obj.GetNbinsX()+1):
+                cnt = obj.GetBinContent(ix,iy)
+                err = obj.GetBinError(ix,iy)
+                counts_y.append(cnt)
+                errors_y.append(err)
+            counts.append(counts_y[:])
+            errors.append(errors_y[:])
+        self._counts = np.array(counts, dtype=np.float64)
+        self._errors = np.array(errors, dtype=np.float64)
+        self._edges = low_edges_x + bin_widths_x, low_edges_y + bin_widths_y
+
+    def _check_consistency(self, other):
+        if len(self._edges[0]) != len(other._edges[0]) \
+                or len(self._edges[1]) != len(other._edges[1]):
+            raise Exception("These histograms cannot be combined due to different binning")
+        return True
+
+    def __eq__(self, other):
+        if not self._check_consistency(other): return False
+        eps = 1.e-6
+        return np.all(self._counts - other.get_counts() < eps) \
+            and np.all(self._edges[0] - other.get_edges()[0] < eps) \
+            and np.all(self._edges[1] - other.get_edges()[1] < eps) \
+            and np.all(self._errors - other.get_errors() < eps)
+
