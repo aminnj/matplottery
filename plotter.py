@@ -170,17 +170,18 @@ def plot_2d(hist,
         gs = matplotlib.gridspec.GridSpec(2, 3, width_ratios=[4,1,0.1], height_ratios=[1,4], wspace=0.05, hspace=0.05, left=0.1, top=0.94, right=0.92)
         ax = plt.subplot(gs[1,0])
         axz = plt.subplot(gs[1,2])
-        axx = plt.subplot(gs[0,0], sharex=ax) # top x projection
-        axy = plt.subplot(gs[1,1], sharey=ax) # right y projection
+        axx = plt.subplot(gs[0,0], sharex=ax)  # top x projection
+        axy = plt.subplot(gs[1,1], sharey=ax)  # right y projection
         axx.label_outer()
         axy.label_outer()
         fig = plt.gcf()
 
         col = matplotlib.cm.get_cmap(cmap)(0.4)
-        axx.hist(projx.get_bin_centers(), bins=projx.get_edges(), weights=projx.get_counts(), histtype="step", color=col)
-        axx.errorbar(projx.get_bin_centers(), projx.get_counts(), yerr=projx.get_errors(), linestyle="", marker="o", markersize=0, linewidth=1.0, color=col)
-        axy.hist(projy.get_bin_centers(), bins=projy.get_edges(), weights=projy.get_counts(), histtype="step", color=col, orientation="horizontal")
-        axy.errorbar(projy.get_counts(), projy.get_bin_centers(), xerr=projy.get_errors(), linestyle="", marker="o", markersize=0, linewidth=1.0, color=col)
+        lw = 1.5
+        axx.hist(projx.get_bin_centers(), bins=projx.get_edges(), weights=np.nan_to_num(projx.get_counts()), histtype="step", color=col, linewidth=lw)
+        axx.errorbar(projx.get_bin_centers(), projx.get_counts(), yerr=projx.get_errors(), linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
+        axy.hist(projy.get_bin_centers(), bins=projy.get_edges(), weights=np.nan_to_num(projy.get_counts()), histtype="step", color=col, orientation="horizontal", linewidth=lw)
+        axy.errorbar(projy.get_counts(), projy.get_bin_centers(), xerr=projy.get_errors(), linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
 
 
     ax.set_xlabel(xlabel, horizontalalignment="right", x=1.)

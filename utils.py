@@ -78,7 +78,7 @@ class Hist1D(object):
             self.init_numpy(obj,**kwargs)
 
     def copy(self):
-        hnew = Hist1D()
+        hnew = self.__class__()
         hnew.__dict__.update(copy.deepcopy(self.__dict__))
         return hnew
 
@@ -167,7 +167,7 @@ class Hist1D(object):
         if self._counts is None:
             return other
         self._check_consistency(other)
-        hnew = Hist1D()
+        hnew = self.__class__()
         hnew._counts = self._counts + other._counts
         hnew._errors = (self._errors**2. + other._errors**2.)**0.5
         hnew._edges = self._edges
@@ -176,7 +176,7 @@ class Hist1D(object):
 
     def __sub__(self, other):
         self._check_consistency(other)
-        hnew = Hist1D()
+        hnew = self.__class__()
         hnew._counts = self._counts - other._counts
         hnew._errors = (self._errors**2. + other._errors**2.)**0.5
         hnew._edges = self._edges
@@ -191,7 +191,7 @@ class Hist1D(object):
 
     def divide(self, other, binomial=False):
         self._check_consistency(other)
-        hnew = Hist1D()
+        hnew = self.__class__()
         hnew._edges = self._edges
         hnew._extra = self._extra
         with np.errstate(divide="ignore",invalid="ignore"):
@@ -339,16 +339,26 @@ class Hist2D(Hist1D):
         hnew._edges = self._edges[1]
         return hnew
 
-    def get_x_profile(self):
+    def _calculate_profile(self, counts, errors, edges_to_sum, edges):
+        centers = 0.5*(edges_to_sum[:-1]+edges_to_sum[1:])
+        num = np.matmul(counts.T,centers)
+        den = np.sum(counts,axis=0)
+        num_err = np.matmul(errors.T**2,centers**2)**0.5
+        den_err = np.sum(errors**2, axis=0)**0.5
+        r_val = num/den
+        r_err = ((num_err/den)**2 + (den_err*num/den**2.0)**2.0)**0.5
         hnew = Hist1D()
-        hnew._counts = self._counts.mean(axis=0)
-        hnew._errors = np.sqrt((self._errors**2).mean(axis=0)/len(self._errors))
-        hnew._edges = self._edges[0]
+        hnew._counts = r_val
+        hnew._errors = r_err
+        hnew._edges = edges
         return hnew
 
+    def get_x_profile(self):
+        xedges = self._edges[0]
+        yedges = self._edges[1]
+        return self._calculate_profile(self._counts, self._errors, yedges, xedges)
+
     def get_y_profile(self):
-        hnew = Hist1D()
-        hnew._counts = self._counts.mean(axis=1)
-        hnew._errors = np.sqrt((self._errors**2).mean(axis=1)/len(self._errors))
-        hnew._edges = self._edges[1]
-        return hnew
+        xedges = self._edges[0]
+        yedges = self._edges[1]
+        return self._calculate_profile(self._counts.T, self._errors.T, xedges, yedges)
