@@ -298,6 +298,19 @@ class Hist2D(Hist1D):
         self._errors = np.array(errors, dtype=np.float64)
         self._edges = low_edges_x + bin_widths_x, low_edges_y + bin_widths_y
 
+    def init_uproot(self, obj, **kwargs):
+        # these arrays are (Nr+2)*(Nc+2) in size
+        # note that we can't use obj.values because
+        # uproot chops off the first and last elements
+        # https://github.com/scikit-hep/uproot/blob/master/uproot/hist.py#L79
+        err2 = np.array(obj.fSumw2)
+        vals = np.array(obj)
+        xedges = obj.fXaxis.fXbins
+        yedges = obj.fYaxis.fXbins
+        self._counts = vals.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1]
+        self._errors = np.sqrt(err2.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1])
+        self._edges = xedges, yedges
+
     def _check_consistency(self, other):
         if len(self._edges[0]) != len(other._edges[0]) \
                 or len(self._edges[1]) != len(other._edges[1]):
