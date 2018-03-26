@@ -2,6 +2,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
 
 import utils
 
@@ -18,9 +19,9 @@ def set_defaults():
     rcParams['figure.subplot.wspace'] = 0.1
 
 
-def add_cms_info(ax, typ="Simulation", lumi="75.0"):
+def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
     ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="x-large")
-    ax.text(0.10, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="x-large")
+    ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="x-large")
     ax.text(0.99, 1.01,"%s fb${}^{-1}$ (13 TeV)" % (lumi), horizontalalignment='right', verticalalignment='bottom', transform = ax.transAxes, size="x-large")
 
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
@@ -135,6 +136,81 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
     if filename:
         fig.tight_layout()
+
+        dirname = os.path.dirname(filename)
+        if dirname and not os.path.isdir(dirname):
+            os.system("mkdir -p {}".format(dirname))
+
+        fig.savefig(filename)
+
+    return fig, fig.axes
+
+def plot_2d(hist,
+        title="", xlabel="", ylabel="", filename="",
+        mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
+        mpl_figure_params={}, mpl_legend_params={},
+        cms_type=None, lumi="-1",
+        do_log=False, do_projection=False, do_profile=False,
+        cmap="PuBu_r",
+        ):
+    set_defaults()
+
+    if do_projection:
+        projx = hist.get_x_projection()
+        projy = hist.get_y_projection()
+    elif do_profile:
+        projx = hist.get_x_profile()
+        projy = hist.get_y_profile()
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    fig.subplots_adjust(left=0.12, right=1.0, top=0.92)
+    do_marginal = do_projection or do_profile
+
+    if do_marginal:
+        gs = matplotlib.gridspec.GridSpec(2, 3, width_ratios=[4,1,0.1], height_ratios=[1,4], wspace=0.05, hspace=0.05, left=0.1, top=0.94, right=0.92)
+        ax = plt.subplot(gs[1,0])
+        axz = plt.subplot(gs[1,2])
+        axx = plt.subplot(gs[0,0], sharex=ax) # top x projection
+        axy = plt.subplot(gs[1,1], sharey=ax) # right y projection
+        axx.label_outer()
+        axy.label_outer()
+        fig = plt.gcf()
+
+        col = matplotlib.cm.get_cmap(cmap)(0.4)
+        axx.hist(projx.get_bin_centers(), bins=projx.get_edges(), weights=projx.get_counts(), histtype="step", color=col)
+        axx.errorbar(projx.get_bin_centers(), projx.get_counts(), yerr=projx.get_errors(), linestyle="", marker="o", markersize=0, linewidth=1.0, color=col)
+        axy.hist(projy.get_bin_centers(), bins=projy.get_edges(), weights=projy.get_counts(), histtype="step", color=col, orientation="horizontal")
+        axy.errorbar(projy.get_counts(), projy.get_bin_centers(), xerr=projy.get_errors(), linestyle="", marker="o", markersize=0, linewidth=1.0, color=col)
+
+
+    ax.set_xlabel(xlabel, horizontalalignment="right", x=1.)
+    ax.set_ylabel(ylabel, horizontalalignment="right", y=1.)
+
+    mpl_2d_hist = {
+            "cmap": cmap,
+            }
+
+    H = hist.get_counts()
+    X, Y = np.meshgrid(*hist.get_edges())
+    if do_log:
+        mpl_2d_hist["norm"] = matplotlib.colors.LogNorm(vmin=H[H>H.min()].min(), vmax=H.max())
+        if do_marginal:
+            axx.set_yscale("log", nonposy='clip')
+            axy.set_xscale("log", nonposx='clip')
+    mappable = ax.pcolorfast(X, Y, H, **mpl_2d_hist)
+
+    if do_marginal:
+        plt.colorbar(mappable, cax=axz)
+    else:
+        plt.colorbar(mappable)
+
+    if cms_type is not None:
+        if do_marginal:
+            add_cms_info(axx, cms_type, lumi, xtype=0.12)
+        else:
+            add_cms_info(ax, cms_type, lumi, xtype=0.12)
+
+    if filename:
 
         dirname = os.path.dirname(filename)
         if dirname and not os.path.isdir(dirname):

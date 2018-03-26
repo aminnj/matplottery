@@ -312,3 +312,30 @@ class Hist2D(Hist1D):
             and np.all(np.abs(self._edges[1] - other.get_edges()[1]) < eps) \
             and np.all(np.abs(self._errors - other.get_errors()) < eps)
 
+    def get_x_projection(self):
+        hnew = Hist1D()
+        hnew._counts = self._counts.sum(axis=0)
+        hnew._errors = np.sqrt((self._errors**2).sum(axis=0))
+        hnew._edges = self._edges[0]
+        return hnew
+
+    def get_y_projection(self):
+        hnew = Hist1D()
+        hnew._counts = self._counts.sum(axis=1)
+        hnew._errors = np.sqrt((self._errors**2).sum(axis=1))
+        hnew._edges = self._edges[1]
+        return hnew
+
+    def get_x_profile(self):
+        hnew = Hist1D()
+        hnew._counts = self._counts.mean(axis=0)
+        hnew._errors = np.sqrt((self._errors**2).mean(axis=0)/len(self._errors))
+        hnew._edges = self._edges[0]
+        return hnew
+
+    def get_y_profile(self):
+        hnew = Hist1D()
+        hnew._counts = self._counts.mean(axis=1)
+        hnew._errors = np.sqrt((self._errors**2).mean(axis=1)/len(self._errors))
+        hnew._edges = self._edges[1]
+        return hnew
