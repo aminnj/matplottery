@@ -92,7 +92,14 @@ class Hist1D(object):
 
         # poisson defaults if not specified
         if self._errors is None:
-            self._errors = np.sqrt(self._counts)
+            if "weights" not in kwargs:
+                self._errors = np.sqrt(self._counts)
+            else:
+                # if weighted entries, need to get sum of sq. weights per bin
+                # and sqrt of that is bin error
+                kwargs["weights"] = kwargs["weights"]**2.
+                counts, _ = np.histogram(obj,**kwargs)
+                self._errors = np.sqrt(counts)
         self._errors = self._errors.astype(np.float64)
 
     def init_root(self, obj, **kwargs):
@@ -152,9 +159,9 @@ class Hist1D(object):
     def __eq__(self, other):
         if not self._check_consistency(other): return False
         eps = 1.e-6
-        return np.all(self._counts - other.get_counts() < eps) \
-            and np.all(self._edges - other.get_edges() < eps) \
-            and np.all(self._errors - other.get_errors() < eps)
+        return np.all(np.abs(self._counts - other.get_counts()) < eps) \
+            and np.all(np.abs(self._edges - other.get_edges()) < eps) \
+            and np.all(np.abs(self._errors - other.get_errors()) < eps)
 
     def __add__(self, other):
         if self._counts is None:
@@ -260,7 +267,14 @@ class Hist2D(Hist1D):
 
         # poisson defaults if not specified
         if self._errors is None:
-            self._errors = np.sqrt(self._counts)
+            if "weights" not in kwargs:
+                self._errors = np.sqrt(self._counts)
+            else:
+                # if weighted entries, need to get sum of sq. weights per bin
+                # and sqrt of that is bin error
+                kwargs["weights"] = kwargs["weights"]**2.
+                counts, _, _ = np.histogram2d(obj[:,0],obj[:,1],**kwargs)
+                self._errors = np.sqrt(counts.T)
         self._errors = self._errors.astype(np.float64)
 
     def init_root(self, obj, **kwargs):
@@ -293,8 +307,8 @@ class Hist2D(Hist1D):
     def __eq__(self, other):
         if not self._check_consistency(other): return False
         eps = 1.e-6
-        return np.all(self._counts - other.get_counts() < eps) \
-            and np.all(self._edges[0] - other.get_edges()[0] < eps) \
-            and np.all(self._edges[1] - other.get_edges()[1] < eps) \
-            and np.all(self._errors - other.get_errors() < eps)
+        return np.all(np.abs(self._counts - other.get_counts()) < eps) \
+            and np.all(np.abs(self._edges[0] - other.get_edges()[0]) < eps) \
+            and np.all(np.abs(self._edges[1] - other.get_edges()[1]) < eps) \
+            and np.all(np.abs(self._errors - other.get_errors()) < eps)
 

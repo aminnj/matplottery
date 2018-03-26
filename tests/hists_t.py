@@ -10,20 +10,21 @@ class HistTest(unittest.TestCase):
 
         bins = 1.0*np.array([0,3,6,9,12,15])
         vals = 1.0*np.array([1,2,3,4,5,10,13])
+        weights = 1.0*np.array([1,1,1,2,2,1,1])
         hr_ = r.TH1F("hr","hr", len(bins)-1, bins)
-        fill_fast(hr_, vals)
+        fill_fast(hr_, vals, weights=weights)
         hr = Hist1D(hr_)
-        hn = Hist1D(vals,bins=bins)
+        hn = Hist1D(vals,bins=bins, weights=weights)
 
         self.assertEqual(hn, hr)
 
-        self.assertEqual(hn.get_integral(), np.sum(vals <= np.max(bins)))
-        self.assertEqual(hr.get_integral(), np.sum(vals <= np.max(bins)))
+        self.assertEqual(hn.get_integral(), np.sum(weights))
+        self.assertEqual(hr.get_integral(), np.sum(weights))
 
         self.assertEqual(np.all(hn.get_edges() == bins), True)
         self.assertEqual(np.all(hr.get_edges() == bins), True)
 
-        check = np.histogram(vals,bins=bins)[0]
+        check = np.histogram(vals,bins=bins,weights=weights)[0]
         self.assertEqual(np.all(hn.get_counts() == check), True)
         self.assertEqual(np.all(hr.get_counts() == check), True)
 
@@ -45,12 +46,13 @@ class HistTest(unittest.TestCase):
                 np.linspace(0.,4.,3),  # edges 0.0,2.0,4.0
                 np.linspace(0.,5.,3),  # edges 0.0,2.5,5.0
                 ]
+        weights = 1.0*np.array([1,1,2,3,1,4])
 
         hr_ = r.TH2F("hr2d","hr2d", len(bins[0])-1, bins[0], len(bins[1])-1, bins[1])
-        fill_fast(hr_, vals2d[:,0], vals2d[:,1])
+        fill_fast(hr_, vals2d[:,0], vals2d[:,1], weights=weights)
         hr = Hist2D(hr_)
 
-        hn = Hist2D(vals2d,bins=bins)
+        hn = Hist2D(vals2d,bins=bins,weights=weights)
 
         self.assertEqual(hn, hr)
 
