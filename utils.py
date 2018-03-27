@@ -60,7 +60,7 @@ class TextPatchHandler(object):
 
 class Hist1D(object):
 
-    def __init__(self, obj=None, **kwargs):
+    def __init__(self, obj=[], **kwargs):
         tstr = str(type(obj))
 
         self._counts = None
@@ -124,6 +124,19 @@ class Hist1D(object):
             del kwargs["label"]
         return kwargs
 
+    def fill_random(self, pdf="gaus", N=1000):
+        if pdf not in ["gaus", "uniform"]:
+            print("Warning: {} not a supported function.".format(pdf))
+            return
+        low, high = self._edges[0], self._edges[-1]
+        cent = 0.5*(self._edges[0] + self._edges[-1])
+        width = high-low
+        if pdf == "gaus": vals = np.random.normal(cent, 0.2*width, N)
+        elif pdf == "uniform": vals = np.random.uniform(low, high, N)
+        counts, _ = np.histogram(vals, bins=self._edges)
+        self._counts += counts
+        self._errors = np.sqrt(self._errors**2. + counts)
+
     def get_errors(self):
         return self._errors
 
@@ -151,6 +164,9 @@ class Hist1D(object):
     def get_integral(self):
         return np.sum(self._counts)
 
+    def get_integral_and_error(self):
+        return np.sum(self._counts), np.sum(self._errors**2.0)**0.5
+
     def _check_consistency(self, other):
         if len(self._edges) != len(other._edges):
             raise Exception("These histograms cannot be combined due to different binning")
@@ -164,6 +180,8 @@ class Hist1D(object):
             and np.all(np.abs(self._errors - other.get_errors()) < eps)
 
     def __add__(self, other):
+        if type(other) == int and other == 0:
+            return self
         if self._counts is None:
             return other
         self._check_consistency(other)
@@ -173,6 +191,8 @@ class Hist1D(object):
         hnew._edges = self._edges
         hnew._extra = self._extra
         return hnew
+
+    __radd__ = __add__
 
     def __sub__(self, other):
         self._check_consistency(other)

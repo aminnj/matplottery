@@ -33,6 +33,21 @@ class HistTest(unittest.TestCase):
 
         self.assertEqual(Hist1D(hr_+0.5*hr_), hn+0.5*hn)
 
+    def test_1d_summing(self):
+        np.random.seed(42)
+
+        vals = np.random.normal(0,1,1000)
+        bins = np.linspace(-3,3,10)
+        h1 = Hist1D(vals,bins=bins)
+
+        vals = np.random.normal(0,1,1000)
+        h2 = Hist1D(vals,bins=bins)
+
+        vals = np.random.normal(0,1,1000)
+        h3 = Hist1D(vals,bins=bins)
+
+        self.assertEqual(h1+h2+h3, sum([h1,h2,h3]))
+
     def test_2d(self):
         vals2d = 1.0*np.array([
                 [1,1],
