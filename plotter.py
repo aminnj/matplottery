@@ -18,7 +18,6 @@ def set_defaults():
     rcParams['figure.subplot.hspace'] = 0.1
     rcParams['figure.subplot.wspace'] = 0.1
 
-
 def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
     ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="x-large")
     ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="x-large")
@@ -151,7 +150,7 @@ def plot_2d(hist,
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         do_log=False, do_projection=False, do_profile=False,
-        cmap="PuBu_r",
+        cmap="PuBu_r", do_colz=False, colz_fmt=".1f"
         ):
     set_defaults()
 
@@ -200,16 +199,37 @@ def plot_2d(hist,
             axy.set_xscale("log", nonposx='clip')
     mappable = ax.pcolorfast(X, Y, H, **mpl_2d_hist)
 
+    if do_colz:
+        xedges = hist.get_edges()[0]
+        yedges = hist.get_edges()[1]
+        xcenters = 0.5*(xedges[1:]+xedges[:-1])
+        ycenters = 0.5*(yedges[1:]+yedges[:-1])
+        counts = hist.get_counts().flatten()
+        triplets = np.c_[ np.tile(xcenters,len(ycenters)), np.repeat(ycenters,len(xcenters)), counts ]
+        norm = mpl_2d_hist.get("norm", matplotlib.colors.Normalize(vmin=H.min(),vmax=H.max()))
+        val_to_rgba = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap).to_rgba
+        fs = min(int(100.0/min(len(xcenters),len(ycenters))),20)
+
+        def val_to_text(bv):
+            return ("{:%s}" % colz_fmt).format(bv)
+
+        for x,y,bv in triplets:
+            color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
+            ax.text(x,y,val_to_text(bv), color=color, ha="center", va="center", fontsize=fs)
+
     if do_marginal:
         plt.colorbar(mappable, cax=axz)
     else:
         plt.colorbar(mappable)
 
-    if cms_type is not None:
-        if do_marginal:
+    if do_marginal:
+        if cms_type is not None:
             add_cms_info(axx, cms_type, lumi, xtype=0.12)
-        else:
+        axx.set_title(title)
+    else:
+        if cms_type is not None:
             add_cms_info(ax, cms_type, lumi, xtype=0.12)
+        ax.set_title(title)
 
     if filename:
 

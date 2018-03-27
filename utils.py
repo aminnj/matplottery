@@ -345,8 +345,9 @@ class Hist2D(Hist1D):
         den = np.sum(counts,axis=0)
         num_err = np.matmul(errors.T**2,centers**2)**0.5
         den_err = np.sum(errors**2, axis=0)**0.5
-        r_val = num/den
-        r_err = ((num_err/den)**2 + (den_err*num/den**2.0)**2.0)**0.5
+        with np.errstate(divide="ignore",invalid="ignore"):
+            r_val = num/den
+            r_err = ((num_err/den)**2 + (den_err*num/den**2.0)**2.0)**0.5
         hnew = Hist1D()
         hnew._counts = r_val
         hnew._errors = r_err
@@ -362,3 +363,41 @@ class Hist2D(Hist1D):
         xedges = self._edges[0]
         yedges = self._edges[1]
         return self._calculate_profile(self._counts.T, self._errors.T, xedges, yedges)
+
+def register_root_palettes():
+    # RGB stops taken from
+    # https://github.com/root-project/root/blob/9acb02a9524b2d9d5edb57c519aea4f4ab8022ac/core/base/src/TColor.cxx#L2523
+
+    palettes = {
+            "kBird": {
+                "reds": [ 0.2082, 0.0592, 0.0780, 0.0232, 0.1802, 0.5301, 0.8186, 0.9956, 0.9764 ],
+                "greens": [ 0.1664, 0.3599, 0.5041, 0.6419, 0.7178, 0.7492, 0.7328, 0.7862, 0.9832 ],
+                "blues": [ 0.5293, 0.8684, 0.8385, 0.7914, 0.6425, 0.4662, 0.3499, 0.1968, 0.0539 ],
+                "stops": np.linspace(0.,1.,9),
+                },
+            "kRainbow": {
+                "reds": [ 0./255., 5./255., 15./255., 35./255., 102./255., 196./255., 208./255., 199./255., 110./255.],
+                "greens": [ 0./255., 48./255., 124./255., 192./255., 206./255., 226./255., 97./255., 16./255., 0./255.],
+                "blues": [ 99./255., 142./255., 198./255., 201./255., 90./255., 22./255., 13./255., 8./255., 2./255.],
+                "stops": np.linspace(0.,1.,9),
+                },
+            "SUSY": {
+                "reds": [0.50, 0.50, 1.00, 1.00, 1.00],
+                "greens": [0.50, 1.00, 1.00, 0.60, 0.50],
+                "blues": [1.00, 1.00, 0.50, 0.40, 0.50],
+                "stops": [0.00, 0.34, 0.61, 0.84, 1.00],
+                },
+            }
+
+    for key in palettes:
+        stops = palettes[key]["stops"]
+        reds = palettes[key]["reds"]
+        greens = palettes[key]["greens"]
+        blues = palettes[key]["blues"]
+        cdict = {
+            "red": zip(stops,reds,reds),
+            "green": zip(stops,greens,greens),
+            "blue": zip(stops,blues,blues)
+        }
+        matplotlib.pyplot.register_cmap(name=key, data=cdict)
+
