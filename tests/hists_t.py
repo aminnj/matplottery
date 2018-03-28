@@ -7,7 +7,6 @@ from utils import Hist1D, Hist2D, fill_fast
 class HistTest(unittest.TestCase):
 
     def test_1d(self):
-
         bins = 1.0*np.array([0,3,6,9,12,15])
         vals = 1.0*np.array([1,2,3,4,5,10,13])
         weights = 1.0*np.array([1,1,1,2,2,1,1])

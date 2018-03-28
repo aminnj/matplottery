@@ -279,7 +279,11 @@ class Hist2D(Hist1D):
             self._errors = kwargs["errors"]
             del kwargs["errors"]
 
-        counts, edgesx, edgesy = np.histogram2d(obj[:,0], obj[:,1],**kwargs)
+        if len(obj) == 0:
+            xs, ys = [],[]
+        else:
+            xs, ys = obj[:,0], obj[:,1]
+        counts, edgesx, edgesy = np.histogram2d(xs, ys, **kwargs)
         # each row = constant y, lowest y on top
         self._counts = counts.T
         self._edges = edgesx, edgesy
