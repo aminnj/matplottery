@@ -49,7 +49,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     centers = [h.get_bin_centers() for h in bgs]
     weights = [h.get_counts() for h in bgs]
 
-    total_integral = sum(bgs,utils.Hist1D()).get_integral()
+    total_integral = sum(bgs).get_integral()
     label_map = { bg.get_attr("label"):"{:.0f}%".format(100.0*bg.get_integral()/total_integral) for bg in bgs }
     # label_map = { label:"{:.1f}".format(hist.get_integral()) for label,hist in zip(labels,bgs) }
 
@@ -107,7 +107,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         if ratio is not None:
             ratios = ratio
         else:
-            ratios = data/sum(bgs,utils.Hist1D())
+            ratios = data/sum(bgs)
 
 
         mpl_opts_ratio = {
