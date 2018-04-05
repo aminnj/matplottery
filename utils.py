@@ -114,6 +114,8 @@ class Hist1D(object):
         self._errors = np.sqrt(obj.fSumw2)[1:-1]
         if len(self._errors) == 0:
             self._errors = np.zeros(len(self._counts))
+        self._edges = np.array(self._edges)
+        self._counts = np.array(self._counts)
 
     def init_extra(self, **kwargs):
         if "color" in kwargs:
@@ -156,7 +158,7 @@ class Hist1D(object):
         return self._edges
 
     def get_bin_centers(self):
-        return 0.5*(self._edges[1:]+self._edges[:-1])
+        return 0.5*(np.array(self._edges[1:])+np.array(self._edges[:-1]))
 
     def get_bin_widths(self):
         return self._edges[1:]-self._edges[:-1]
@@ -333,7 +335,7 @@ class Hist2D(Hist1D):
         yedges = obj.fYaxis.fXbins
         self._counts = vals.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1]
         self._errors = np.sqrt(err2.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1])
-        self._edges = xedges, yedges
+        self._edges = np.array(xedges), np.array(yedges)
 
     def _check_consistency(self, other):
         if len(self._edges[0]) != len(other._edges[0]) \
@@ -348,6 +350,16 @@ class Hist2D(Hist1D):
             and np.all(np.abs(self._edges[0] - other.get_edges()[0]) < eps) \
             and np.all(np.abs(self._edges[1] - other.get_edges()[1]) < eps) \
             and np.all(np.abs(self._errors - other.get_errors()) < eps)
+
+    def get_bin_centers(self):
+        xcenters = 0.5*(self._edges[0][1:]+self._edges[0][:-1])
+        ycenters = 0.5*(self._edges[1][1:]+self._edges[1][:-1])
+        return (xcenters,ycenters)
+
+    def get_bin_widths(self):
+        xwidths = self._edges[0][1:]-self._edges[0][:-1]
+        ywidths = self._edges[1][1:]-self._edges[1][:-1]
+        return (xwidths,ywidths)
 
     def get_x_projection(self):
         hnew = Hist1D()

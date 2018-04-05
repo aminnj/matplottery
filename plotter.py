@@ -21,7 +21,7 @@ def set_defaults():
 def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
     ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="x-large")
     ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="x-large")
-    ax.text(0.99, 1.01,"%s fb${}^{-1}$ (13 TeV)" % (lumi), horizontalalignment='right', verticalalignment='bottom', transform = ax.transAxes, size="x-large")
+    ax.text(0.99, 1.01,"%s fb${}^{-1}$ (13 TeV)" % (lumi), horizontalalignment='right', verticalalignment='bottom', transform = ax.transAxes, size="large")
 
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
@@ -150,7 +150,9 @@ def plot_2d(hist,
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         do_log=False, do_projection=False, do_profile=False,
-        cmap="PuBu_r", do_colz=False, colz_fmt=".1f"
+        cmap="PuBu_r", do_colz=False, colz_fmt=".1f",
+        logx=False, logy=False,
+        xticks=[], yticks=[],
         ):
     set_defaults()
 
@@ -162,8 +164,9 @@ def plot_2d(hist,
         projy = hist.get_y_profile()
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    fig.subplots_adjust(left=0.12, right=1.0, top=0.92)
+    fig.subplots_adjust(left=0.14, right=1.0, top=0.92)
     do_marginal = do_projection or do_profile
+    
 
     if do_marginal:
         gs = matplotlib.gridspec.GridSpec(2, 3, width_ratios=[4,1,0.1], height_ratios=[1,4], wspace=0.05, hspace=0.05, left=0.1, top=0.94, right=0.92)
@@ -200,22 +203,31 @@ def plot_2d(hist,
     mappable = ax.pcolorfast(X, Y, H, **mpl_2d_hist)
 
     if do_colz:
-        xedges = hist.get_edges()[0]
-        yedges = hist.get_edges()[1]
-        xcenters = 0.5*(xedges[1:]+xedges[:-1])
-        ycenters = 0.5*(yedges[1:]+yedges[:-1])
+        xedges, yedges = hist.get_edges()
+        xcenters, ycenters = hist.get_bin_centers()
+        xwidths, ywidths = hist.get_bin_widths()
         counts = hist.get_counts().flatten()
-        triplets = np.c_[ np.tile(xcenters,len(ycenters)), np.repeat(ycenters,len(xcenters)), counts ]
+        errors = hist.get_errors().flatten()
+        info = np.c_[
+                np.tile(xcenters,len(ycenters)),
+                np.repeat(ycenters,len(xcenters)),
+                counts,
+                errors 
+                ]
         norm = mpl_2d_hist.get("norm", matplotlib.colors.Normalize(vmin=H.min(),vmax=H.max()))
         val_to_rgba = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap).to_rgba
-        fs = min(int(100.0/min(len(xcenters),len(ycenters))),20)
+        # fs = min(int(100.0/min(len(xcenters),len(ycenters))),20)
+        fs = min(int(25.0/min(len(xcenters),len(ycenters))),20)
+        # fs = min(int(45.0/min(len(xcenters),len(ycenters))),20)
 
-        def val_to_text(bv):
-            return ("{:%s}" % colz_fmt).format(bv)
+        def val_to_text(bv,be):
+            return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
 
-        for x,y,bv in triplets:
+        for x,y,bv,be in info:
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
-            ax.text(x,y,val_to_text(bv), color=color, ha="center", va="center", fontsize=fs)
+            ax.text(x,y,val_to_text(bv,be), 
+                    color=color, ha="center", va="center", fontsize=fs,
+                    wrap=True)
 
     if do_marginal:
         plt.colorbar(mappable, cax=axz)
@@ -230,6 +242,18 @@ def plot_2d(hist,
         if cms_type is not None:
             add_cms_info(ax, cms_type, lumi, xtype=0.12)
         ax.set_title(title)
+
+    if logx:
+        ax.set_xscale("log", nonposx='clip')
+    if logy:
+        ax.set_yscale("log", nonposy='clip')
+
+    if len(xticks):
+        ax.xaxis.set_ticks(xticks)
+        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    if len(yticks):
+        ax.yaxis.set_ticks(yticks)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     if filename:
 
