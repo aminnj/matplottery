@@ -166,7 +166,7 @@ def plot_2d(hist,
     fig, ax = plt.subplots(nrows=1, ncols=1)
     fig.subplots_adjust(left=0.14, right=1.0, top=0.92)
     do_marginal = do_projection or do_profile
-    
+
 
     if do_marginal:
         gs = matplotlib.gridspec.GridSpec(2, 3, width_ratios=[4,1,0.1], height_ratios=[1,4], wspace=0.05, hspace=0.05, left=0.1, top=0.94, right=0.92)
@@ -202,31 +202,45 @@ def plot_2d(hist,
             axy.set_xscale("log", nonposx='clip')
     mappable = ax.pcolorfast(X, Y, H, **mpl_2d_hist)
 
+    if logx:
+        ax.set_xscale("log", nonposx='clip')
+    if logy:
+        ax.set_yscale("log", nonposy='clip')
+
     if do_colz:
         xedges, yedges = hist.get_edges()
         xcenters, ycenters = hist.get_bin_centers()
-        xwidths, ywidths = hist.get_bin_widths()
         counts = hist.get_counts().flatten()
         errors = hist.get_errors().flatten()
+        pts = np.array([
+            xedges,
+            np.zeros(len(xedges))+yedges[0]
+            ]).T
+        x = ax.transData.transform(pts)[:,0]
+        fxwidths = (x[1:] - x[:-1]) / (x.max() - x.min())
         info = np.c_[
                 np.tile(xcenters,len(ycenters)),
                 np.repeat(ycenters,len(xcenters)),
+                np.tile(fxwidths,len(ycenters)),
                 counts,
-                errors 
+                errors
                 ]
         norm = mpl_2d_hist.get("norm", matplotlib.colors.Normalize(vmin=H.min(),vmax=H.max()))
         val_to_rgba = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap).to_rgba
-        # fs = min(int(100.0/min(len(xcenters),len(ycenters))),20)
-        fs = min(int(25.0/min(len(xcenters),len(ycenters))),20)
-        # fs = min(int(45.0/min(len(xcenters),len(ycenters))),20)
+        fs = min(int(30.0/min(len(xcenters),len(ycenters))),15)
 
         def val_to_text(bv,be):
             return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
 
-        for x,y,bv,be in info:
+        do_autosize = True
+        for x,y,fxw,bv,be in info:
+            if do_autosize:
+                fs_ = 4.5*fxw*fs
+            else:
+                fs_ = 1.0*fs
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
-            ax.text(x,y,val_to_text(bv,be), 
-                    color=color, ha="center", va="center", fontsize=fs,
+            ax.text(x,y,val_to_text(bv,be),
+                    color=color, ha="center", va="center", fontsize=fs_,
                     wrap=True)
 
     if do_marginal:
@@ -243,10 +257,6 @@ def plot_2d(hist,
             add_cms_info(ax, cms_type, lumi, xtype=0.12)
         ax.set_title(title)
 
-    if logx:
-        ax.set_xscale("log", nonposx='clip')
-    if logy:
-        ax.set_yscale("log", nonposy='clip')
 
     if len(xticks):
         ax.xaxis.set_ticks(xticks)
