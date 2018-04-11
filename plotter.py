@@ -28,6 +28,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
+        ratio_range=[],
         ):
     set_defaults()
 
@@ -97,6 +98,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             )
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
+    if ratio_range:
+        ax_main.set_ylim(ratio_range)
 
     if cms_type is not None:
         add_cms_info(ax_main, cms_type, lumi)
