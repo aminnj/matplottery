@@ -112,10 +112,10 @@ class Hist1D(object):
     def init_uproot(self, obj, **kwargs):
         (self._counts, self._edges) = obj.numpy
         self._errors = np.sqrt(obj.fSumw2)[1:-1]
-        if len(self._errors) == 0:
-            self._errors = np.zeros(len(self._counts))
         self._edges = np.array(self._edges)
         self._counts = np.array(self._counts)
+        if len(self._errors) == 0:
+            self._errors = self._counts**0.5
 
     def init_extra(self, **kwargs):
         if "color" in kwargs:
