@@ -75,7 +75,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         do_ratio = True
 
     if do_ratio:
-        fig, (ax_main,ax_ratio) = plt.subplots(2,1, sharex=True, gridspec_kw={'height_ratios':[9, 2]},**mpl_figure_params)
+        fig, (ax_main,ax_ratio) = plt.subplots(2,1, sharex=True, gridspec_kw={'height_ratios':[9, 2],"top":0.94},**mpl_figure_params)
     else:
         fig, ax_main = plt.subplots(1,1,**mpl_figure_params)
 
@@ -86,7 +86,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ax_main.errorbar(data.get_bin_centers(),data.get_counts(),yerr=data.get_errors(),xerr=data_xerr,label=data.get_attr("label", "Data"), **mpl_data_hist)
     if sigs:
         for sig in sigs:
-            ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.get_counts(),color="r",histtype="step", label=sig.get_attr("label","sig"))
+            # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.get_counts(),color="r",histtype="step", label=sig.get_attr("label","sig"))
+            ax_main.errorbar(sig.get_bin_centers(),sig.get_counts(),yerr=sig.get_errors(),xerr=None,label=sig.get_attr("label", "Data"), markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
 
     ax_main.set_ylabel(ylabel, horizontalalignment="right", y=1.)
     ax_main.set_title(title)
@@ -230,7 +231,12 @@ def plot_2d(hist,
         fs = min(int(30.0/min(len(xcenters),len(ycenters))),15)
 
         def val_to_text(bv,be):
-            return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
+            # return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
+            # return ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
+            # buff = ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
+            buff = ("{:%s}\n($\pm${:.1f}%%)" % (colz_fmt)).format(bv,100.0*be/bv)
+            # return buff.replace("e-0","e-")
+            return buff
 
         do_autosize = True
         for x,y,fxw,bv,be in info:
