@@ -98,8 +98,6 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             )
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
-    if ratio_range:
-        ax_main.set_ylim(ratio_range)
 
     if cms_type is not None:
         add_cms_info(ax_main, cms_type, lumi)
@@ -132,6 +130,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ax_ratio.set_ylim(ylims)
         ax_ratio.legend()
         # ax_ratio.set_ylim([0.,1.])
+        if ratio_range:
+            ax_ratio.set_ylim(ratio_range)
 
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
     else:
