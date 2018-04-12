@@ -155,6 +155,9 @@ class Hist1D(object):
     def get_errors_down(self):
         return self._errors_down
 
+    def get_relative_errors(self):
+        return self._errors / self._counts
+
     def get_counts(self):
         return self._counts
 
@@ -171,10 +174,10 @@ class Hist1D(object):
         return self._edges[1:]-self._edges[:-1]
 
     def get_integral(self):
-        return np.sum(self._counts)
+        return float(np.sum(self._counts))
 
     def get_integral_and_error(self):
-        return np.sum(self._counts), np.sum(self._errors**2.0)**0.5
+        return float(np.sum(self._counts)), float(np.sum(self._errors**2.0)**0.5)
 
     def _check_consistency(self, other):
         if len(self._edges) != len(other._edges):
