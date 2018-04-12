@@ -1,8 +1,11 @@
+from __future__ import print_function
+
 import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 import utils
 
@@ -35,7 +38,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     colors = [bg.get_attr("color") for bg in bgs]
     labels = [bg.get_attr("label") for bg in bgs]
     if not all(colors):
-        # print "Not enough colors specified, so using automatic colors"
+        # print("Not enough colors specified, so using automatic colors")
         colors = None
 
     if bgs:
@@ -43,7 +46,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     elif data:
         bins = data.get_edges()
     else:
-        print "What are you even trying to plot?"
+        print("What are you even trying to plot?")
         return
 
 

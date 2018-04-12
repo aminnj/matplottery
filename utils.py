@@ -1,7 +1,14 @@
+from __future__ import print_function
+
+import sys
 import array
 import matplotlib
 import numpy as np
 import copy
+
+PY2 = True
+if sys.version_info[0] >= 3:
+    PY2 = False
 
 MET_LATEX = "E$\\!\\!\\! \\backslash{}_\\mathrm{T}$"
 
@@ -211,6 +218,8 @@ class Hist1D(object):
         else:
             return self.divide(other)
 
+    __truediv__ = __div__
+
     def divide(self, other, binomial=False):
         self._check_consistency(other)
         hnew = self.__class__()
@@ -258,7 +267,11 @@ class Hist1D(object):
     def __repr__(self):
         use_ascii = False
         if use_ascii: sep = "+-"
-        else: sep = u"\u00B1".encode("utf-8")
+        else: 
+            if PY2:
+                sep = u"\u00B1".encode("utf-8")
+            else:
+                sep = u"\u00B1"
         # trick: want to use numpy's smart formatting (truncating,...) of arrays
         # so we convert value,error into a complex number and format that 1D array :)
         formatter = {"complex_kind": lambda x:"%5.2f {} %4.2f".format(sep) % (np.real(x),np.imag(x))}
