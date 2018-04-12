@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-import matplottery.utils
+import matplottery.utils as utils
 
 def set_defaults():
     from matplotlib import rcParams
@@ -32,6 +32,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         ratio_range=[],
+        do_bkg_syst=False,
         ):
     set_defaults()
 
@@ -53,7 +54,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     centers = [h.get_bin_centers() for h in bgs]
     weights = [h.get_counts() for h in bgs]
 
-    total_integral = sum(bgs).get_integral()
+    sbgs = sum(bgs)
+    total_integral = sbgs.get_integral()
     label_map = { bg.get_attr("label"):"{:.0f}%".format(100.0*bg.get_integral()/total_integral) for bg in bgs }
     # label_map = { label:"{:.1f}".format(hist.get_integral()) for label,hist in zip(labels,bgs) }
 
@@ -84,10 +86,26 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         fig, ax_main = plt.subplots(1,1,**mpl_figure_params)
 
     ax_main.hist(centers,bins=bins,weights=weights,label=labels,color=colors,**mpl_bg_hist)
+
+    if do_bkg_syst:
+        tot_vals = sbgs.get_counts()
+        tot_errs = sbgs.get_errors()
+        double_edges = np.repeat(sbgs.get_edges(),2,axis=0)[1:-1]
+        his = np.repeat(tot_vals+tot_errs,2)
+        los = np.repeat(tot_vals-tot_errs,2)
+        ax_main.fill_between(double_edges,his,los, step="mid",
+                alpha=0.5, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=1, linestyle='-')
+
     if data:
         data_xerr = None
-        # data_xerr = data.get_bin_widths()/2
-        ax_main.errorbar(data.get_bin_centers(),data.get_counts(),yerr=data.get_errors(),xerr=data_xerr,label=data.get_attr("label", "Data"), **mpl_data_hist)
+        select = data.get_counts() != 0
+        # data_xerr = (data.get_bin_widths()/2)[select]
+        ax_main.errorbar(
+                data.get_bin_centers()[select],
+                data.get_counts()[select],
+                yerr=data.get_errors()[select],
+                xerr=data_xerr,
+                label=data.get_attr("label", "Data"), **mpl_data_hist)
     if sigs:
         for sig in sigs:
             # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.get_counts(),color="r",histtype="step", label=sig.get_attr("label","sig"))
@@ -131,11 +149,18 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ylims = ax_ratio.get_ylim()
         ax_ratio.plot([ax_ratio.get_xlim()[0],ax_ratio.get_xlim()[1]],[1,1],color="gray",linewidth=1.,alpha=0.5)
         ax_ratio.set_ylim(ylims)
-        ax_ratio.legend()
-        # ax_ratio.set_ylim([0.,1.])
+        # ax_ratio.legend()
         if ratio_range:
             ax_ratio.set_ylim(ratio_range)
 
+        if do_bkg_syst:
+            double_edges = np.repeat(ratios.get_edges(),2,axis=0)[1:-1]
+            his = np.repeat(1.+np.abs(sbgs.get_relative_errors()),2)
+            los = np.repeat(1.-np.abs(sbgs.get_relative_errors()),2)
+            ax_ratio.fill_between(double_edges, his, los, step="mid",
+                    alpha=0.5, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=1, linestyle='-')
+
+        ax_ratio.set_ylabel(mpl_opts_ratio["label"], horizontalalignment="right", y=1.)
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
     else:
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
