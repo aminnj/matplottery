@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-import utils
+import matplottery.utils
 
 def set_defaults():
     from matplotlib import rcParams

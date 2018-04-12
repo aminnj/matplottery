@@ -2,7 +2,7 @@ import unittest
 
 import ROOT as r
 import numpy as np
-from utils import Hist1D, Hist2D, fill_fast
+from matplottery.utils import Hist1D, Hist2D, fill_fast
 
 class HistTest(unittest.TestCase):
 
