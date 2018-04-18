@@ -20,12 +20,12 @@ class HistTest(unittest.TestCase):
         self.assertEqual(hn.get_integral(), np.sum(weights))
         self.assertEqual(hr.get_integral(), np.sum(weights))
 
-        self.assertEqual(np.all(hn.get_edges() == bins), True)
-        self.assertEqual(np.all(hr.get_edges() == bins), True)
+        self.assertEqual(np.all(hn.edges == bins), True)
+        self.assertEqual(np.all(hr.edges == bins), True)
 
         check = np.histogram(vals,bins=bins,weights=weights)[0]
-        self.assertEqual(np.all(hn.get_counts() == check), True)
-        self.assertEqual(np.all(hr.get_counts() == check), True)
+        self.assertEqual(np.all(hn.counts == check), True)
+        self.assertEqual(np.all(hr.counts == check), True)
 
         self.assertEqual(Hist1D(hr_*2), hn*2)
         self.assertEqual(Hist1D(hr_+hr_), hn+hn)
@@ -72,10 +72,10 @@ class HistTest(unittest.TestCase):
 
         self.assertEqual(hn.get_integral(), hr.get_integral())
 
-        self.assertEqual(np.all(hr.get_edges()[0] == bins[0]), True)
-        self.assertEqual(np.all(hr.get_edges()[1] == bins[1]), True)
-        self.assertEqual(np.all(hn.get_edges()[0] == bins[0]), True)
-        self.assertEqual(np.all(hn.get_edges()[1] == bins[1]), True)
+        self.assertEqual(np.all(hr.edges[0] == bins[0]), True)
+        self.assertEqual(np.all(hr.edges[1] == bins[1]), True)
+        self.assertEqual(np.all(hn.edges[0] == bins[0]), True)
+        self.assertEqual(np.all(hn.edges[1] == bins[1]), True)
 
         hr2x_ = hr_.Clone("hr2x")
         hr2x_.Scale(2.0)

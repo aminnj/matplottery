@@ -167,6 +167,18 @@ class Hist1D(object):
         self._counts += counts
         self._errors = np.sqrt(self._errors**2. + counts)
 
+    @property
+    def errors(self):
+        return self._errors
+
+    @property
+    def counts(self):
+        return self._counts
+
+    @property
+    def edges(self):
+        return self._edges
+
     def get_errors(self):
         return self._errors
 
@@ -208,9 +220,9 @@ class Hist1D(object):
     def __eq__(self, other):
         if not self._check_consistency(other): return False
         eps = 1.e-6
-        return np.all(np.abs(self._counts - other.get_counts()) < eps) \
-            and np.all(np.abs(self._edges - other.get_edges()) < eps) \
-            and np.all(np.abs(self._errors - other.get_errors()) < eps)
+        return np.all(np.abs(self._counts - other.counts) < eps) \
+            and np.all(np.abs(self._edges - other.edges) < eps) \
+            and np.all(np.abs(self._errors - other.errors) < eps)
 
     def __add__(self, other):
         if type(other) == int and other == 0:
@@ -383,10 +395,10 @@ class Hist2D(Hist1D):
     def __eq__(self, other):
         if not self._check_consistency(other): return False
         eps = 1.e-6
-        return np.all(np.abs(self._counts - other.get_counts()) < eps) \
-            and np.all(np.abs(self._edges[0] - other.get_edges()[0]) < eps) \
-            and np.all(np.abs(self._edges[1] - other.get_edges()[1]) < eps) \
-            and np.all(np.abs(self._errors - other.get_errors()) < eps)
+        return np.all(np.abs(self._counts - other.counts) < eps) \
+            and np.all(np.abs(self._edges[0] - other.edges[0]) < eps) \
+            and np.all(np.abs(self._edges[1] - other.edges[1]) < eps) \
+            and np.all(np.abs(self._errors - other.errors) < eps)
 
     def get_bin_centers(self):
         xcenters = 0.5*(self._edges[0][1:]+self._edges[0][:-1])

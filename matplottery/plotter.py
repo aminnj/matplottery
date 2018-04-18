@@ -43,16 +43,16 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         colors = None
 
     if bgs:
-        bins = bgs[0].get_edges()
+        bins = bgs[0].edges
     elif data:
-        bins = data.get_edges()
+        bins = data.edges
     else:
         print("What are you even trying to plot?")
         return
 
 
     centers = [h.get_bin_centers() for h in bgs]
-    weights = [h.get_counts() for h in bgs]
+    weights = [h.counts for h in bgs]
 
     sbgs = sum(bgs)
     total_integral = sbgs.get_integral()
@@ -88,9 +88,9 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     ax_main.hist(centers,bins=bins,weights=weights,label=labels,color=colors,**mpl_bg_hist)
 
     if do_bkg_syst:
-        tot_vals = sbgs.get_counts()
-        tot_errs = sbgs.get_errors()
-        double_edges = np.repeat(sbgs.get_edges(),2,axis=0)[1:-1]
+        tot_vals = sbgs.counts
+        tot_errs = sbgs.errors
+        double_edges = np.repeat(sbgs.edges,2,axis=0)[1:-1]
         his = np.repeat(tot_vals+tot_errs,2)
         los = np.repeat(tot_vals-tot_errs,2)
         ax_main.fill_between(double_edges,his,los, step="mid",
@@ -98,19 +98,19 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
     if data:
         data_xerr = None
-        select = data.get_counts() != 0
+        select = data.counts != 0
         # data_xerr = (data.get_bin_widths()/2)[select]
         ax_main.errorbar(
                 data.get_bin_centers()[select],
-                data.get_counts()[select],
-                yerr=data.get_errors()[select],
+                data.counts[select],
+                yerr=data.errors[select],
                 xerr=data_xerr,
                 label=data.get_attr("label", "Data"), 
                 zorder=6, **mpl_data_hist)
     if sigs:
         for sig in sigs:
-            # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.get_counts(),color="r",histtype="step", label=sig.get_attr("label","sig"))
-            ax_main.errorbar(sig.get_bin_centers(),sig.get_counts(),yerr=sig.get_errors(),xerr=None,label=sig.get_attr("label", "Data"), markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
+            # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
+            ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,label=sig.get_attr("label", "Data"), markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
 
     ax_main.set_ylabel(ylabel, horizontalalignment="right", y=1.)
     ax_main.set_title(title)
@@ -135,7 +135,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
 
         mpl_opts_ratio = {
-                "yerr": ratios.get_errors(),
+                "yerr": ratios.errors,
                 "label": "Data/MC",
                 # "xerr": data_xerr,
                 }
@@ -145,7 +145,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         mpl_opts_ratio.update(mpl_data_hist)
         mpl_opts_ratio.update(mpl_ratio_params)
 
-        ax_ratio.errorbar(ratios.get_bin_centers(),ratios.get_counts(),**mpl_opts_ratio)
+        ax_ratio.errorbar(ratios.get_bin_centers(),ratios.counts,**mpl_opts_ratio)
         ax_ratio.set_autoscale_on(False)
         ylims = ax_ratio.get_ylim()
         ax_ratio.plot([ax_ratio.get_xlim()[0],ax_ratio.get_xlim()[1]],[1,1],color="gray",linewidth=1.,alpha=0.5)
@@ -155,7 +155,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             ax_ratio.set_ylim(ratio_range)
 
         if do_bkg_syst:
-            double_edges = np.repeat(ratios.get_edges(),2,axis=0)[1:-1]
+            double_edges = np.repeat(ratios.edges,2,axis=0)[1:-1]
             his = np.repeat(1.+np.abs(sbgs.get_relative_errors()),2)
             los = np.repeat(1.-np.abs(sbgs.get_relative_errors()),2)
             ax_ratio.fill_between(double_edges, his, los, step="mid",
@@ -213,10 +213,10 @@ def plot_2d(hist,
 
         col = matplotlib.cm.get_cmap(cmap)(0.4)
         lw = 1.5
-        axx.hist(projx.get_bin_centers(), bins=projx.get_edges(), weights=np.nan_to_num(projx.get_counts()), histtype="step", color=col, linewidth=lw)
-        axx.errorbar(projx.get_bin_centers(), projx.get_counts(), yerr=projx.get_errors(), linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
-        axy.hist(projy.get_bin_centers(), bins=projy.get_edges(), weights=np.nan_to_num(projy.get_counts()), histtype="step", color=col, orientation="horizontal", linewidth=lw)
-        axy.errorbar(projy.get_counts(), projy.get_bin_centers(), xerr=projy.get_errors(), linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
+        axx.hist(projx.get_bin_centers(), bins=projx.edges, weights=np.nan_to_num(projx.counts), histtype="step", color=col, linewidth=lw)
+        axx.errorbar(projx.get_bin_centers(), projx.counts, yerr=projx.errors, linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
+        axy.hist(projy.get_bin_centers(), bins=projy.edges, weights=np.nan_to_num(projy.counts), histtype="step", color=col, orientation="horizontal", linewidth=lw)
+        axy.errorbar(projy.counts, projy.get_bin_centers(), xerr=projy.errors, linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
 
 
     ax.set_xlabel(xlabel, horizontalalignment="right", x=1.)
@@ -226,8 +226,8 @@ def plot_2d(hist,
             "cmap": cmap,
             }
 
-    H = hist.get_counts()
-    X, Y = np.meshgrid(*hist.get_edges())
+    H = hist.counts
+    X, Y = np.meshgrid(*hist.edges)
     if do_log:
         mpl_2d_hist["norm"] = matplotlib.colors.LogNorm(vmin=H[H>H.min()].min(), vmax=H.max())
         if do_marginal:
@@ -241,10 +241,10 @@ def plot_2d(hist,
         ax.set_yscale("log", nonposy='clip')
 
     if do_colz:
-        xedges, yedges = hist.get_edges()
+        xedges, yedges = hist.edges
         xcenters, ycenters = hist.get_bin_centers()
-        counts = hist.get_counts().flatten()
-        errors = hist.get_errors().flatten()
+        counts = hist.counts.flatten()
+        errors = hist.errors.flatten()
         pts = np.array([
             xedges,
             np.zeros(len(xedges))+yedges[0]
