@@ -94,7 +94,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         his = np.repeat(tot_vals+tot_errs,2)
         los = np.repeat(tot_vals-tot_errs,2)
         ax_main.fill_between(double_edges,his,los, step="mid",
-                alpha=0.5, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=1, linestyle='-')
+                alpha=0.4, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=0.5, linestyle='-', zorder=5)
 
     if data:
         data_xerr = None
@@ -105,7 +105,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
                 data.get_counts()[select],
                 yerr=data.get_errors()[select],
                 xerr=data_xerr,
-                label=data.get_attr("label", "Data"), **mpl_data_hist)
+                label=data.get_attr("label", "Data"), 
+                zorder=6, **mpl_data_hist)
     if sigs:
         for sig in sigs:
             # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.get_counts(),color="r",histtype="step", label=sig.get_attr("label","sig"))
@@ -158,7 +159,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             his = np.repeat(1.+np.abs(sbgs.get_relative_errors()),2)
             los = np.repeat(1.-np.abs(sbgs.get_relative_errors()),2)
             ax_ratio.fill_between(double_edges, his, los, step="mid",
-                    alpha=0.5, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=1, linestyle='-')
+                    alpha=0.4, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=0.5, linestyle='-')
 
         ax_ratio.set_ylabel(mpl_opts_ratio["label"], horizontalalignment="right", y=1.)
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
