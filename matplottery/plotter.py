@@ -33,6 +33,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         cms_type=None, lumi="-1",
         ratio_range=[],
         do_bkg_syst=False,
+        xticks=[],
         ):
     set_defaults()
 
@@ -105,7 +106,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
                 data.counts[select],
                 yerr=data.errors[select],
                 xerr=data_xerr,
-                label=data.get_attr("label", "Data"), 
+                label=data.get_attr("label", "Data"),
                 zorder=6, **mpl_data_hist)
     if sigs:
         for sig in sigs:
@@ -163,6 +164,10 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
         ax_ratio.set_ylabel(mpl_opts_ratio["label"], horizontalalignment="right", y=1.)
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
+
+        if len(xticks):
+            ax_ratio.xaxis.set_ticks(ratios.get_bin_centers())
+            ax_ratio.set_xticklabels(xticks, horizontalalignment='center')
     else:
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
 
