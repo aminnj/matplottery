@@ -184,13 +184,14 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
 def plot_2d(hist,
         title="", xlabel="", ylabel="", filename="",
-        mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
+        mpl_hist_params={}, mpl_2d_params={}, mpl_ratio_params={},
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         do_log=False, do_projection=False, do_profile=False,
         cmap="PuBu_r", do_colz=False, colz_fmt=".1f",
         logx=False, logy=False,
         xticks=[], yticks=[],
+        zrange=[],
         ):
     set_defaults()
 
@@ -230,6 +231,10 @@ def plot_2d(hist,
     mpl_2d_hist = {
             "cmap": cmap,
             }
+    mpl_2d_hist.update(mpl_2d_params)
+    if zrange:
+        mpl_2d_hist["vmin"] = zrange[0]
+        mpl_2d_hist["vmax"] = zrange[1]
 
     H = hist.counts
     X, Y = np.meshgrid(*hist.edges)
@@ -255,6 +260,7 @@ def plot_2d(hist,
             np.zeros(len(xedges))+yedges[0]
             ]).T
         x = ax.transData.transform(pts)[:,0]
+        y = ax.transData.transform(pts)[:,1]
         fxwidths = (x[1:] - x[:-1]) / (x.max() - x.min())
         info = np.c_[
                 np.tile(xcenters,len(ycenters)),
@@ -263,7 +269,11 @@ def plot_2d(hist,
                 counts,
                 errors
                 ]
-        norm = mpl_2d_hist.get("norm", matplotlib.colors.Normalize(vmin=H.min(),vmax=H.max()))
+        norm = mpl_2d_hist.get("norm",
+                matplotlib.colors.Normalize(
+                    mpl_2d_hist.get("vmin",H.min()),
+                    mpl_2d_hist.get("vmax",H.max()),
+                    ))
         val_to_rgba = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap).to_rgba
         fs = min(int(30.0/min(len(xcenters),len(ycenters))),15)
 
@@ -278,7 +288,7 @@ def plot_2d(hist,
         do_autosize = True
         for x,y,fxw,bv,be in info:
             if do_autosize:
-                fs_ = 4.5*fxw*fs
+                fs_ = min(5.5*fxw*fs,14)
             else:
                 fs_ = 1.0*fs
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
