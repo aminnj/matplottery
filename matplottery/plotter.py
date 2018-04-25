@@ -110,8 +110,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
                 zorder=6, **mpl_data_hist)
     if sigs:
         for sig in sigs:
-            # ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
-            ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,label=sig.get_attr("label", "Data"), markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
+            ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
+            ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,markersize=1,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
 
     ax_main.set_ylabel(ylabel, horizontalalignment="right", y=1.)
     ax_main.set_title(title)
@@ -179,6 +179,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             os.system("mkdir -p {}".format(dirname))
 
         fig.savefig(filename)
+        fig.savefig(filename.replace(".pdf",".png"))
 
     return fig, fig.axes
 
