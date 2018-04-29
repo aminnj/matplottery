@@ -29,7 +29,7 @@ def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
-        mpl_figure_params={}, mpl_legend_params={},
+        mpl_figure_params={}, mpl_legend_params={}, mpl_sig_params={},
         cms_type=None, lumi="-1",
         ratio_range=[],
         do_bkg_syst=False,
@@ -110,15 +110,20 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
                 zorder=6, **mpl_data_hist)
     if sigs:
         for sig in sigs:
-            ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
-            ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,markersize=1,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
+            if mpl_sig_params.get("hist",True):
+                ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
+                ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,markersize=1,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
+            else:
+                select = sig.counts != 0
+                ax_main.errorbar(sig.get_bin_centers()[select],sig.counts[select],yerr=sig.errors[select],xerr=None,markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"), label=sig.get_attr("label","sig"))
 
     ax_main.set_ylabel(ylabel, horizontalalignment="right", y=1.)
     ax_main.set_title(title)
-    ax_main.legend(
+    legend = ax_main.legend(
             handler_map={ matplotlib.patches.Patch: utils.TextPatchHandler(label_map) },
             **mpl_legend_params
             )
+    legend.set_zorder(10)
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
 
