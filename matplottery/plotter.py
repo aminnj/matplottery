@@ -34,6 +34,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ratio_range=[],
         do_bkg_syst=False,do_bkg_errors=False,
         xticks=[],
+        return_bin_coordinates=False,
         ):
     set_defaults()
 
@@ -103,6 +104,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
                     linewidth=patch.get_linewidth(),
                     color=patch.get_edgecolor(),
                     )
+
 
     if do_bkg_syst:
         tot_vals = sbgs.counts
@@ -192,6 +194,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     else:
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
 
+
     if filename:
         fig.tight_layout()
 
@@ -202,7 +205,26 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         fig.savefig(filename)
         fig.savefig(filename.replace(".pdf",".png"))
 
-    return fig, fig.axes
+    # totransform = []
+    # for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
+    #     totransform.append([ep[0],0.])
+    #     totransform.append([ep[1],count])
+    # totransform = np.array(totransform)
+    # disp_coords = ax_main.transData.transform(totransform)
+    # fig_coords = fig.transFigure.inverted().transform(disp_coords)
+
+    totransform = []
+    for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
+        totransform.append([ep[0],0.])
+        totransform.append([ep[1],count])
+    totransform = np.array(totransform)
+    disp_coords = ax_main.transData.transform(totransform)
+    fig_coords = fig.transFigure.inverted().transform(disp_coords)
+
+    to_ret = [fig, fig.axes]
+    if return_bin_coordinates:
+        to_ret.append(fig_coords)
+    return to_ret
 
 def plot_2d(hist,
         title="", xlabel="", ylabel="", filename="",
