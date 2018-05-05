@@ -382,6 +382,10 @@ class Hist2D(Hist1D):
         vals = np.array(obj)
         xedges = obj.fXaxis.fXbins
         yedges = obj.fYaxis.fXbins
+        if not xedges:
+            xedges = np.linspace(obj.fXaxis.fXmin,obj.fXaxis.fXmax,obj.fXaxis.fNbins+1)
+        if not yedges:
+            yedges = np.linspace(obj.fYaxis.fXmin,obj.fYaxis.fXmax,obj.fYaxis.fNbins+1)
         self._counts = vals.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1]
         self._errors = np.sqrt(err2.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1])
         self._edges = np.array(xedges), np.array(yedges)
@@ -412,15 +416,15 @@ class Hist2D(Hist1D):
 
     def get_x_projection(self):
         hnew = Hist1D()
-        hnew._counts = self._counts.sum(axis=0)
-        hnew._errors = np.sqrt((self._errors**2).sum(axis=0))
+        hnew._counts = self._counts.mean(axis=0)
+        hnew._errors = np.sqrt((self._errors**2).mean(axis=0))
         hnew._edges = self._edges[0]
         return hnew
 
     def get_y_projection(self):
         hnew = Hist1D()
-        hnew._counts = self._counts.sum(axis=1)
-        hnew._errors = np.sqrt((self._errors**2).sum(axis=1))
+        hnew._counts = self._counts.mean(axis=1)
+        hnew._errors = np.sqrt((self._errors**2).mean(axis=1))
         hnew._edges = self._edges[1]
         return hnew
 

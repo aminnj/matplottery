@@ -32,7 +32,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         mpl_figure_params={}, mpl_legend_params={}, mpl_sig_params={},
         cms_type=None, lumi="-1",
         ratio_range=[],
-        do_bkg_syst=False,
+        do_bkg_syst=False,do_bkg_errors=False,
         xticks=[],
         ):
     set_defaults()
@@ -86,7 +86,23 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     else:
         fig, ax_main = plt.subplots(1,1,**mpl_figure_params)
 
-    ax_main.hist(centers,bins=bins,weights=weights,label=labels,color=colors,**mpl_bg_hist)
+    _, _, patches = ax_main.hist(centers,bins=bins,weights=weights,label=labels,color=colors,**mpl_bg_hist)
+    # for p in patches:
+    #     print(p[0])
+    #     print(p[0].get_transform())
+    if do_bkg_errors:
+        for bg,patch in zip(bgs,patches):
+            patch = patch[0]
+            ax_main.errorbar(
+                    bg.get_bin_centers(),
+                    bg.counts,
+                    yerr=bg.errors,
+                    markersize=patch.get_linewidth(),
+                    marker="o",
+                    linestyle="",
+                    linewidth=patch.get_linewidth(),
+                    color=patch.get_edgecolor(),
+                    )
 
     if do_bkg_syst:
         tot_vals = sbgs.counts
@@ -229,6 +245,9 @@ def plot_2d(hist,
         axx.errorbar(projx.get_bin_centers(), projx.counts, yerr=projx.errors, linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
         axy.hist(projy.get_bin_centers(), bins=projy.edges, weights=np.nan_to_num(projy.counts), histtype="step", color=col, orientation="horizontal", linewidth=lw)
         axy.errorbar(projy.counts, projy.get_bin_centers(), xerr=projy.errors, linestyle="", marker="o", markersize=0, linewidth=lw, color=col)
+
+        # axx.set_ylim([0.,1.])
+        # axy.set_xlim([0.,1.])
 
 
     ax.set_xlabel(xlabel, horizontalalignment="right", x=1.)
