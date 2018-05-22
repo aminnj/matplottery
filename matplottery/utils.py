@@ -323,6 +323,21 @@ class Hist1D(object):
     def get_attrs(self):
         return self._extra
 
+    def rebin(self, nrebin):
+        """
+        combine `nrebin` bins into 1 bin, so
+        nbins must be divisible by `nrebin` exactly
+        """
+        if (len(self._edges)-1) % nrebin != 0:
+            raise Exception("This histogram cannot be rebinned since {} is not divisible by {}".format(len(self.edges)-1,nrebin))
+        errors2 = self._errors**2.
+        new_counts = map(sum,[self._counts[i*nrebin:(i+1)*nrebin] for i in range(0, len(self._edges)//nrebin)])
+        new_errors2 = map(sum,[errors2[i*nrebin:(i+1)*nrebin] for i in range(0, len(self._edges)//nrebin)])
+        new_edges = self._edges[::nrebin]
+        self._edges = np.array(new_edges)
+        self._errors = np.array(new_errors2)**0.5
+        self._counts = np.array(new_counts)
+
 class Hist2D(Hist1D):
 
     def init_numpy(self, obj, **kwargs):

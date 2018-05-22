@@ -47,6 +47,19 @@ class HistTest(unittest.TestCase):
 
         self.assertEqual(h1+h2+h3, sum([h1,h2,h3]))
 
+    def test_1d_rebinning(self):
+        np.random.seed(42)
+
+        nrebin = 5
+        h1 = Hist1D(np.random.normal(0,5,1000), bins=np.linspace(-10,10,21))
+        nbins_before = len(h1.edges) - 1
+        int_before = h1.get_integral()
+        h1.rebin(nrebin)
+        nbins_after = len(h1.edges) - 1
+        int_after = h1.get_integral()
+        self.assertEqual(int_before, int_after)
+        self.assertEqual(nbins_after, nbins_before // nrebin)
+
     def test_2d(self):
         vals2d = 1.0*np.array([
                 [1,1],
