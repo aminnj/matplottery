@@ -35,6 +35,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         do_bkg_syst=False,do_bkg_errors=False,
         xticks=[],
         return_bin_coordinates=False,
+        ax_main_callback=None,
+        ax_ratio_callback=None,
         ):
     set_defaults()
 
@@ -93,7 +95,10 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     #     print(p[0].get_transform())
     if do_bkg_errors:
         for bg,patch in zip(bgs,patches):
-            patch = patch[0]
+            try:
+                patch = patch[0]
+            except TypeError:
+                pass
             ax_main.errorbar(
                     bg.get_bin_centers(),
                     bg.counts,
@@ -145,6 +150,9 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
 
+    if ax_main_callback:
+        ax_main_callback(ax_main)
+
     if cms_type is not None:
         add_cms_info(ax_main, cms_type, lumi)
 
@@ -174,7 +182,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ylims = ax_ratio.get_ylim()
         ax_ratio.plot([ax_ratio.get_xlim()[0],ax_ratio.get_xlim()[1]],[1,1],color="gray",linewidth=1.,alpha=0.5)
         ax_ratio.set_ylim(ylims)
-        # ax_ratio.legend()
+        ax_ratio.legend()
         if ratio_range:
             ax_ratio.set_ylim(ratio_range)
 
@@ -191,6 +199,10 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         if len(xticks):
             ax_ratio.xaxis.set_ticks(ratios.get_bin_centers())
             ax_ratio.set_xticklabels(xticks, horizontalalignment='center')
+
+        if ax_ratio_callback:
+            ax_ratio_callback(ax_ratio)
+
     else:
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
 
