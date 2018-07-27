@@ -340,16 +340,19 @@ def plot_2d(hist,
             # return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
             # return ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
             # buff = ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
-            buff = ("{:%s}\n($\pm${:.1f}%%)" % (colz_fmt)).format(bv,100.0*be/bv)
+            buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt)).format(bv,100.0*be/bv)
             # return buff.replace("e-0","e-")
             return buff
 
         do_autosize = True
+        if len(np.unique(np.diff(xcenters).round(2)))+len(np.unique(np.diff(ycenters).round(2))) == 2:
+            # for equidistant bins in x and y, don't autosize the bin text
+            do_autosize = False
         for x,y,fxw,bv,be in info:
             if do_autosize:
                 fs_ = min(5.5*fxw*fs,14)
             else:
-                fs_ = 1.0*fs
+                fs_ = 2.5*fs
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
             ax.text(x,y,val_to_text(bv,be),
                     color=color, ha="center", va="center", fontsize=fs_,
