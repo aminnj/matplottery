@@ -368,3 +368,9 @@ _ = plotter.plot_2d(hist, do_projection=True, xlabel="x label", ylabel="ylabel",
 
 ![png](images/output_26_0.png)
 
+
+### Unit tests
+```bash
+python -m unittest discover -s tests -p "*.py"
+```
+
