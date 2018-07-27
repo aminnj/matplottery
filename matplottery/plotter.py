@@ -20,6 +20,7 @@ def set_defaults():
     rcParams['ytick.labelsize'] = 'large'
     rcParams['figure.subplot.hspace'] = 0.1
     rcParams['figure.subplot.wspace'] = 0.1
+    rcParams['figure.max_open_warning'] = 0
 
 def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
     ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="x-large")
@@ -340,7 +341,11 @@ def plot_2d(hist,
             # return ("{:%s}\n$\pm${:%s}" % (colz_fmt,colz_fmt)).format(bv,be)
             # return ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
             # buff = ("{:%s}\n$\pm${:%s}\n($\pm${:.1f}%%)" % (colz_fmt,colz_fmt)).format(bv,be,100.0*be/bv)
-            buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt)).format(bv,100.0*be/bv)
+            if bv < 1.0e-6:
+                pcterr = 0.
+            else:
+                pcterr = 100.0*be/bv
+            buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt)).format(bv,pcterr)
             # return buff.replace("e-0","e-")
             return buff
 
