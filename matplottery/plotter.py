@@ -11,20 +11,22 @@ import matplottery.utils as utils
 
 def set_defaults():
     from matplotlib import rcParams
-    rcParams['font.family'] = 'sans-serif'
-    rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans, Liberation Sans'
+    # rcParams['font.family'] = 'sans-serif'
+    # rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans, Liberation Sans'
     rcParams['legend.fontsize'] = 'large'
     rcParams['axes.labelsize'] = 'x-large'
-    rcParams['axes.titlesize'] = 'x-large'
+    rcParams['axes.titlesize'] = 'large'
     rcParams['xtick.labelsize'] = 'large'
     rcParams['ytick.labelsize'] = 'large'
     rcParams['figure.subplot.hspace'] = 0.1
     rcParams['figure.subplot.wspace'] = 0.1
     rcParams['figure.max_open_warning'] = 0
+    rcParams['figure.dpi'] = 150
+    rcParams["axes.formatter.limits"] = [-5,5] # scientific notation if log(y) outside this
 
-def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.1):
-    ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="x-large")
-    ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="x-large")
+def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.09):
+    ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="large")
+    ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="large")
     ax.text(0.99, 1.01,"%s fb${}^{-1}$ (13 TeV)" % (lumi), horizontalalignment='right', verticalalignment='bottom', transform = ax.transAxes, size="large")
 
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
@@ -150,6 +152,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     legend.set_zorder(10)
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
+    ax_main.yaxis.get_offset_text().set_x(-0.07)
 
     if ax_main_callback:
         ax_main_callback(ax_main)
@@ -217,14 +220,6 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
         fig.savefig(filename)
         fig.savefig(filename.replace(".pdf",".png"))
-
-    # totransform = []
-    # for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
-    #     totransform.append([ep[0],0.])
-    #     totransform.append([ep[1],count])
-    # totransform = np.array(totransform)
-    # disp_coords = ax_main.transData.transform(totransform)
-    # fig_coords = fig.transFigure.inverted().transform(disp_coords)
 
     totransform = []
     for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
@@ -345,7 +340,10 @@ def plot_2d(hist,
                 pcterr = 0.
             else:
                 pcterr = 100.0*be/bv
-            buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt)).format(bv,pcterr)
+            if bv < 1.0e-6 and be < 1.0e-6:
+                buff = "0"
+            else:
+                buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt.replace("e","f"))).format(bv,pcterr)
             # return buff.replace("e-0","e-")
             return buff
 
@@ -370,11 +368,11 @@ def plot_2d(hist,
 
     if do_marginal:
         if cms_type is not None:
-            add_cms_info(axx, cms_type, lumi, xtype=0.12)
+            add_cms_info(axx, cms_type, lumi, xtype=0.10)
         axx.set_title(title)
     else:
         if cms_type is not None:
-            add_cms_info(ax, cms_type, lumi, xtype=0.12)
+            add_cms_info(ax, cms_type, lumi, xtype=0.10)
         ax.set_title(title)
 
 
@@ -392,5 +390,6 @@ def plot_2d(hist,
             os.system("mkdir -p {}".format(dirname))
 
         fig.savefig(filename)
+        fig.savefig(filename.replace(".pdf",".png"))
 
     return fig, fig.axes
