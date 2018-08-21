@@ -13,16 +13,22 @@ def set_defaults():
     from matplotlib import rcParams
     # rcParams['font.family'] = 'sans-serif'
     # rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans, Liberation Sans'
-    rcParams['legend.fontsize'] = 'large'
+    rcParams['legend.fontsize'] = 11
+    rcParams['legend.labelspacing'] = 0.2
+    # rcParams['axes.xmargin'] = 0.0 # rootlike, no extra padding within x axis
+    rcParams['axes.labelsize'] = 'x-large'
+    rcParams['axes.formatter.use_mathtext'] = True
+    rcParams['legend.framealpha'] = 0.65
     rcParams['axes.labelsize'] = 'x-large'
     rcParams['axes.titlesize'] = 'large'
     rcParams['xtick.labelsize'] = 'large'
     rcParams['ytick.labelsize'] = 'large'
     rcParams['figure.subplot.hspace'] = 0.1
     rcParams['figure.subplot.wspace'] = 0.1
+    rcParams['figure.subplot.right'] = 0.96
     rcParams['figure.max_open_warning'] = 0
-    rcParams['figure.dpi'] = 150
-    rcParams["axes.formatter.limits"] = [-5,5] # scientific notation if log(y) outside this
+    rcParams['figure.dpi'] = 125
+    rcParams["axes.formatter.limits"] = [-5,4] # scientific notation if log(y) outside this
 
 def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.09):
     ax.text(0.0, 1.01,"CMS", horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, weight="bold", size="large")
@@ -67,7 +73,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     # label_map = { label:"{:.1f}".format(hist.get_integral()) for label,hist in zip(labels,bgs) }
 
     mpl_bg_hist = {
-            "alpha": 0.9,
+            "alpha": 1.0,
             "histtype": "stepfilled",
             "stacked": True,
             }
@@ -152,7 +158,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     legend.set_zorder(10)
     ylims = ax_main.get_ylim()
     ax_main.set_ylim([0.0,ylims[1]])
-    ax_main.yaxis.get_offset_text().set_x(-0.07)
+    ax_main.yaxis.get_offset_text().set_x(-0.095)
 
     if ax_main_callback:
         ax_main_callback(ax_main)
@@ -186,7 +192,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ylims = ax_ratio.get_ylim()
         ax_ratio.plot([ax_ratio.get_xlim()[0],ax_ratio.get_xlim()[1]],[1,1],color="gray",linewidth=1.,alpha=0.5)
         ax_ratio.set_ylim(ylims)
-        ax_ratio.legend()
+        # ax_ratio.legend()
         if ratio_range:
             ax_ratio.set_ylim(ratio_range)
 
