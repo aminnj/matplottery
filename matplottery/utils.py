@@ -311,7 +311,8 @@ class Hist1D(object):
         # so we convert value,error into a complex number and format that 1D array :)
         formatter = {"complex_kind": lambda x:"%5.2f {} %4.2f".format(sep) % (np.real(x),np.imag(x))}
         a2s = np.array2string(self._counts+self._errors*1j,formatter=formatter, suppress_small=True, separator="   ")
-        return "<{}:\n{}\n>".format(self.__class__.__name__,a2s)
+        # return "<{}:\n{}\n>".format(self.__class__.__name__,a2s)
+        return "<{}:{}>".format(self.__class__.__name__,a2s)
 
     def set_attr(self, attr, val):
         self._extra[attr] = val

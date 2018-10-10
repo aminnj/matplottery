@@ -5,14 +5,19 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 
 
 import matplottery.utils as utils
 
 def set_defaults():
     from matplotlib import rcParams
-    # rcParams['font.family'] = 'sans-serif'
-    # rcParams['font.sans-serif'] = 'helvetica, Helvetica, Arial, Nimbus Sans L, Mukti Narrow, FreeSans, Liberation Sans'
+    rcParams["font.family"] = "sans-serif"
+    rcParams["font.sans-serif"] = ["Helvetica", "Arial", "Liberation Sans", "Bitstream Vera Sans", "DejaVu Sans"]
+    # rcParams['mathtext.fontset'] = 'custom'
+    # rcParams['mathtext.rm'] = 'Liberation Sans'
+    # rcParams['mathtext.it'] = 'Liberation Sans:italic'
+    # rcParams['mathtext.bf'] = 'Liberation Sans:bold'
     rcParams['legend.fontsize'] = 11
     rcParams['legend.labelspacing'] = 0.2
     # rcParams['axes.xmargin'] = 0.0 # rootlike, no extra padding within x axis
@@ -208,7 +213,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
         if len(xticks):
             ax_ratio.xaxis.set_ticks(ratios.get_bin_centers())
-            ax_ratio.set_xticklabels(xticks, horizontalalignment='center')
+            ax_ratio.set_xticklabels(xticks, horizontalalignment='center',fontsize=9)
 
         if ax_ratio_callback:
             ax_ratio_callback(ax_ratio)
@@ -218,7 +223,10 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
 
     if filename:
-        fig.tight_layout()
+        # https://stackoverflow.com/questions/22227165/catch-matplotlib-warning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig.tight_layout()
 
         dirname = os.path.dirname(filename)
         if dirname and not os.path.isdir(dirname):
