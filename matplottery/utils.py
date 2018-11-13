@@ -106,6 +106,15 @@ class Hist1D(object):
             self._errors = kwargs["errors"]
             del kwargs["errors"]
 
+        if not kwargs.pop("no_overflow",False):
+            if "bins" in kwargs:
+                binlow = kwargs["bins"][0]
+                binhigh = kwargs["bins"][-1]
+                islow = obj < binlow
+                ishigh = obj > binhigh
+                obj[islow] = binlow
+                obj[ishigh] = binhigh
+
         self._counts, self._edges = np.histogram(obj,**kwargs)
         self._counts = self._counts.astype(np.float64)
 
@@ -123,7 +132,7 @@ class Hist1D(object):
 
     def init_root(self, obj, **kwargs):
         nbins = obj.GetNbinsX()
-        if not kwargs.get("no_overflow",False):
+        if not kwargs.pop("no_overflow",False):
             # move under and overflow into first and last visible bins
             # set bin error before content because setting the content updates the error?
             obj.SetBinError(1, (obj.GetBinError(1)**2.+obj.GetBinError(0)**2.)**0.5)
@@ -141,7 +150,7 @@ class Hist1D(object):
         self._edges = np.array(self._edges)
         self._counts = np.array(self._counts)
 
-        if not kwargs.get("no_overflow",False):
+        if not kwargs.pop("no_overflow",False):
             # under and overflow
             # if no sumw2, then we'll let the errors=sqrt(counts)
             # handle the error properly (since we move in the counts at least)
@@ -323,10 +332,13 @@ class Hist1D(object):
                 sep = u"\u00B1"
         # trick: want to use numpy's smart formatting (truncating,...) of arrays
         # so we convert value,error into a complex number and format that 1D array :)
-        formatter = {"complex_kind": lambda x:"%5.2f {} %4.2f".format(sep) % (np.real(x),np.imag(x))}
+        prec = np.get_printoptions()["precision"]
+        if prec == 8: prec = 3
+        formatter = {"complex_kind": lambda x:"%5.{}f {} %4.{}f".format(prec,sep,prec) % (np.real(x),np.imag(x))}
         a2s = np.array2string(self._counts+self._errors*1j,formatter=formatter, suppress_small=True, separator="   ")
         # return "<{}:\n{}\n>".format(self.__class__.__name__,a2s)
-        return "<{}:{}>".format(self.__class__.__name__,a2s)
+        # return "<{}:{}>".format(self.__class__.__name__,a2s)
+        return a2s
 
     def set_attr(self, attr, val):
         self._extra[attr] = val
