@@ -45,6 +45,18 @@ def fill_fast(hist, xvals, yvals=None, weights=None):
     else:
         hist.FillN(len(xvals),xvals,yvals,weights)
 
+
+def nan_to_num(f):
+    def g(*args, **kw):
+        return np.nan_to_num(f(*args, **kw))
+    return g
+
+def ignore_division_errors(f):
+    def g(*args, **kw):
+        with np.errstate(divide="ignore",invalid="ignore"):
+            return f(*args, **kw)
+    return g
+
 class TextPatchHandler(object):
     def __init__(self, label_map={}):
         self.label_map = label_map
@@ -187,6 +199,8 @@ class Hist1D(object):
     def get_errors_down(self):
         return self._errors_down
 
+    @ignore_division_errors
+    # @nan_to_num
     def get_relative_errors(self):
         return self._errors / self._counts
 
@@ -255,26 +269,26 @@ class Hist1D(object):
 
     __truediv__ = __div__
 
+    @ignore_division_errors
     def divide(self, other, binomial=False):
         self._check_consistency(other)
         hnew = self.__class__()
         hnew._edges = self._edges
         hnew._extra = self._extra
-        with np.errstate(divide="ignore",invalid="ignore"):
-            if not binomial:
-                hnew._counts = self._counts / other._counts
-                hnew._errors = (
-                        (self._errors/other._counts)**2.0 +
-                        (other._errors*self._counts/(other._counts)**2.0)**2.0
-                        )**0.5
-            else:
-                hnew._errors_down, hnew._errors_up = clopper_pearson_error(self._counts,other._counts)
-                hnew._counts = self._counts/other._counts
-                hnew._errors = 0.*hnew._counts
-                # these are actually the positions for down and up, but we want the errors
-                # wrt to the central value
-                hnew._errors_up = hnew._errors_up - hnew._counts
-                hnew._errors_down = hnew._counts - hnew._errors_down
+        if not binomial:
+            hnew._counts = self._counts / other._counts
+            hnew._errors = (
+                    (self._errors/other._counts)**2.0 +
+                    (other._errors*self._counts/(other._counts)**2.0)**2.0
+                    )**0.5
+        else:
+            hnew._errors_down, hnew._errors_up = clopper_pearson_error(self._counts,other._counts)
+            hnew._counts = self._counts/other._counts
+            hnew._errors = 0.*hnew._counts
+            # these are actually the positions for down and up, but we want the errors
+            # wrt to the central value
+            hnew._errors_up = hnew._errors_up - hnew._counts
+            hnew._errors_down = hnew._counts - hnew._errors_down
         return hnew
 
 
@@ -289,12 +303,12 @@ class Hist1D(object):
 
     __rmul__ = __mul__
 
+    @ignore_division_errors
     def __pow__(self, expo):
         if type(expo) in [float,int]:
             hnew = self.copy()
-            with np.errstate(divide="ignore",invalid="ignore"):
-                hnew._counts = hnew._counts ** expo
-                hnew._errors *= hnew._counts**(expo-1) * expo
+            hnew._counts = hnew._counts ** expo
+            hnew._errors *= hnew._counts**(expo-1) * expo
             return hnew
         else:
             raise Exception("Can't multiply histogram by non-scalar")
@@ -441,15 +455,15 @@ class Hist2D(Hist1D):
         hnew._edges = self._edges[1]
         return hnew
 
+    @ignore_division_errors
     def _calculate_profile(self, counts, errors, edges_to_sum, edges):
         centers = 0.5*(edges_to_sum[:-1]+edges_to_sum[1:])
         num = np.matmul(counts.T,centers)
         den = np.sum(counts,axis=0)
         num_err = np.matmul(errors.T**2,centers**2)**0.5
         den_err = np.sum(errors**2, axis=0)**0.5
-        with np.errstate(divide="ignore",invalid="ignore"):
-            r_val = num/den
-            r_err = ((num_err/den)**2 + (den_err*num/den**2.0)**2.0)**0.5
+        r_val = num/den
+        r_err = ((num_err/den)**2 + (den_err*num/den**2.0)**2.0)**0.5
         hnew = Hist1D()
         hnew._counts = r_val
         hnew._errors = r_err

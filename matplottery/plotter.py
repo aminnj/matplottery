@@ -371,14 +371,15 @@ def plot_2d(hist,
             else:
                 fs_ = 2.5*fs
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
+            if bv < 0.01: continue
             ax.text(x,y,val_to_text(bv,be),
                     color=color, ha="center", va="center", fontsize=fs_,
                     wrap=True)
 
     if do_marginal:
-        plt.colorbar(mappable, cax=axz)
+        fig.colorbar(mappable, cax=axz)
     else:
-        plt.colorbar(mappable)
+        fig.colorbar(mappable)
 
     if do_marginal:
         if cms_type is not None:
@@ -391,11 +392,16 @@ def plot_2d(hist,
 
 
     if len(xticks):
-        ax.xaxis.set_ticks(xticks)
-        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.xaxis.set_ticklabels(xticks)
+        # ax.xaxis.set_ticks(xticks)
+        # ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if len(yticks):
-        ax.yaxis.set_ticks(yticks)
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.yaxis.set_ticklabels(yticks)
+        # ax.yaxis.set_ticks(yticks)
+        # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3))
+        ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(base=1))
 
     if filename:
 
