@@ -151,7 +151,7 @@ class Hist1D(object):
 
     def init_uproot(self, obj, **kwargs):
         (self._counts, self._edges) = obj.numpy
-        self._errors = np.sqrt(obj.fSumw2)[1:-1]
+        self._errors = np.sqrt(obj._fSumw2)[1:-1]
         self._edges = np.array(self._edges)
         self._counts = np.array(self._counts)
 
@@ -162,8 +162,8 @@ class Hist1D(object):
             underflow, overflow = obj[0], obj[-1]
             self._counts[0] += underflow
             self._counts[-1] += overflow
-            if obj.fSumw2:
-                eunderflow2, eoverflow2 = obj.fSumw2[0], obj.fSumw2[-1]
+            if obj._fSumw2:
+                eunderflow2, eoverflow2 = obj._fSumw2[0], obj._fSumw2[-1]
                 self._errors[0] = (self._errors[0]**2.+eunderflow2)**0.5
                 self._errors[-1] = (self._errors[-1]**2.+eoverflow2)**0.5
 
@@ -399,7 +399,7 @@ class Hist1D(object):
         self._errors = np.array(new_errors2)**0.5
         self._counts = np.array(new_counts)
 
-    def vis(self, height=7, width=20, braille=False, frame=True, color=None):
+    def vis(self, height=7, width=20, braille=False, frame=True, fancy=True, color=None):
         try:
             from braille import horizontal_bar_chart
         except:
@@ -407,7 +407,7 @@ class Hist1D(object):
             return None
         # each bin is half a character width, so tile until we get to <= width
         counts = np.repeat(self._counts, max(width//(len(self._counts)//2),1))
-        chart = horizontal_bar_chart(counts, maxnchars=height,frame=frame,charheight=(4 if braille else 2),color=color)
+        chart = horizontal_bar_chart(counts, maxnchars=height,frame=frame,charheight=(4 if braille else 2),color=color, fancy=fancy)
         return chart
 
 class Hist2D(Hist1D):
@@ -463,14 +463,14 @@ class Hist2D(Hist1D):
         # note that we can't use obj.values because
         # uproot chops off the first and last elements
         # https://github.com/scikit-hep/uproot/blob/master/uproot/hist.py#L79
-        err2 = np.array(obj.fSumw2)
+        err2 = np.array(obj._fSumw2)
         vals = np.array(obj)
-        xedges = obj.fXaxis.fXbins
-        yedges = obj.fYaxis.fXbins
+        xedges = obj._fXaxis._fXbins
+        yedges = obj._fYaxis._fXbins
         if not xedges:
-            xedges = np.linspace(obj.fXaxis.fXmin,obj.fXaxis.fXmax,obj.fXaxis.fNbins+1)
+            xedges = np.linspace(obj._fXaxis._fXmin,obj._fXaxis._fXmax,obj._fXaxis._fNbins+1)
         if not yedges:
-            yedges = np.linspace(obj.fYaxis.fXmin,obj.fYaxis.fXmax,obj.fYaxis.fNbins+1)
+            yedges = np.linspace(obj._fYaxis._fXmin,obj._fYaxis._fXmax,obj._fYaxis._fNbins+1)
         self._counts = vals.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1]
         self._errors = np.sqrt(err2.reshape(len(yedges)+1,len(xedges)+1)[1:-1, 1:-1])
         self._edges = np.array(xedges), np.array(yedges)

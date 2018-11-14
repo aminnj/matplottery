@@ -47,6 +47,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         cms_type=None, lumi="-1",
         do_log=False,
         ratio_range=[],
+        do_stack=True,
         do_bkg_syst=False,do_bkg_errors=False,
         xticks=[],
         return_bin_coordinates=False,
@@ -81,7 +82,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     mpl_bg_hist = {
             "alpha": 1.0,
             "histtype": "stepfilled",
-            "stacked": True,
+            "stacked": do_stack,
             }
     mpl_bg_hist.update(mpl_hist_params)
     mpl_data_hist = {
@@ -399,16 +400,16 @@ def plot_2d(hist,
 
 
     if len(xticks):
-        ax.xaxis.set_ticklabels(xticks)
-        # ax.xaxis.set_ticks(xticks)
+        # ax.xaxis.set_ticklabels(xticks)
+        ax.xaxis.set_ticks(xticks)
         # ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if len(yticks):
-        ax.yaxis.set_ticklabels(yticks)
-        # ax.yaxis.set_ticks(yticks)
+        # ax.yaxis.set_ticklabels(yticks)
+        ax.yaxis.set_ticks(yticks)
         # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3))
-        ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(base=1))
+        # ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3))
+        # ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(base=1))
 
     if filename:
 
