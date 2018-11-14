@@ -5,6 +5,7 @@ import array
 import matplotlib
 import numpy as np
 import copy
+import warnings
 
 PY2 = True
 if sys.version_info[0] >= 3:
@@ -95,6 +96,10 @@ class Hist1D(object):
             self.init_uproot(obj,**kwargs)
         elif "ndarray" in tstr or "list" in tstr:
             self.init_numpy(obj,**kwargs)
+        elif "Hist1D" in tstr:
+            newextra = self._extra.copy()
+            self.__dict__.update(obj.__dict__)
+            self._extra.update(newextra)
 
     def copy(self):
         hnew = self.__class__()
@@ -234,6 +239,12 @@ class Hist1D(object):
     def get_integral_and_error(self):
         return float(np.sum(self._counts)), float(np.sum(self._errors**2.0)**0.5)
 
+    def _fix_nan(self):
+        for x in [self._counts,self._errors,
+                self._errors_up,self._errors_down]:
+            if x is not None:
+                np.nan_to_num(x,copy=False)
+
     def _check_consistency(self, other):
         if len(self._edges) != len(other._edges):
             raise Exception("These histograms cannot be combined due to different binning")
@@ -241,10 +252,18 @@ class Hist1D(object):
 
     def __eq__(self, other):
         if not self._check_consistency(other): return False
-        eps = 1.e-6
-        return np.all(np.abs(self._counts - other.counts) < eps) \
-            and np.all(np.abs(self._edges - other.edges) < eps) \
-            and np.all(np.abs(self._errors - other.errors) < eps)
+        eps = 1.e-5
+        iseq = np.all(np.abs(self._counts - other.counts) < eps)
+        iseq = iseq and np.all(np.abs(self._edges - other.edges) < eps)
+        iseq = iseq and np.all(np.abs(self._errors - other.errors) < eps)
+        if self._errors_up is not None:
+            iseq = iseq and np.all(np.abs(self._errors_up - other._errors_up) < eps)
+        if self._errors_down is not None:
+            iseq = iseq and np.all(np.abs(self._errors_down - other._errors_down) < eps)
+        return iseq
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __add__(self, other):
         if type(other) == int and other == 0:
@@ -256,7 +275,7 @@ class Hist1D(object):
         hnew._counts = self._counts + other._counts
         hnew._errors = (self._errors**2. + other._errors**2.)**0.5
         hnew._edges = self._edges
-        hnew._extra = self._extra
+        hnew._extra = self._extra.copy()
         return hnew
 
     __radd__ = __add__
@@ -267,12 +286,22 @@ class Hist1D(object):
         hnew._counts = self._counts - other._counts
         hnew._errors = (self._errors**2. + other._errors**2.)**0.5
         hnew._edges = self._edges
-        hnew._extra = self._extra
+        hnew._extra = self._extra.copy()
         return hnew
 
     def __div__(self, other):
         if type(other) in [float,int]:
             return self.__mul__(1.0/other)
+        elif any(x in str(type(other)) for x in ["ndarray","list"]):
+            # Divide histogram by array (counts) assuming errors are 0
+            other = np.array(other)
+            if len(other) != len(self._counts):
+                raise Exception("Cannot divide due to different binning")
+            hnew = self.__class__()
+            hnew._edges = self._edges
+            hnew._counts = other
+            hnew._errors = 0.*hnew._counts
+            return self.divide(hnew)
         else:
             return self.divide(other)
 
@@ -283,7 +312,7 @@ class Hist1D(object):
         self._check_consistency(other)
         hnew = self.__class__()
         hnew._edges = self._edges
-        hnew._extra = self._extra
+        hnew._extra = self._extra.copy()
         if not binomial:
             hnew._counts = self._counts / other._counts
             hnew._errors = (
@@ -291,6 +320,7 @@ class Hist1D(object):
                     (other._errors*self._counts/(other._counts)**2.0)**2.0
                     )**0.5
         else:
+            bothzero = (self._counts==0) & (other._counts==0)
             hnew._errors_down, hnew._errors_up = clopper_pearson_error(self._counts,other._counts)
             hnew._counts = self._counts/other._counts
             hnew._errors = 0.*hnew._counts
@@ -298,6 +328,8 @@ class Hist1D(object):
             # wrt to the central value
             hnew._errors_up = hnew._errors_up - hnew._counts
             hnew._errors_down = hnew._counts - hnew._errors_down
+            # For consistency with TEfficiency, up error is 1 if we have 0/0
+            hnew._errors_up[bothzero] = 1.
         return hnew
 
 
@@ -347,7 +379,10 @@ class Hist1D(object):
         return self._extra.get(attr,default)
 
     def get_attrs(self):
-        return self._extra
+        return self._extra.copy()
+
+    def set_label(self,label):
+        return self.set_attr("label",label)
 
     def rebin(self, nrebin):
         """
@@ -363,6 +398,17 @@ class Hist1D(object):
         self._edges = np.array(new_edges)
         self._errors = np.array(new_errors2)**0.5
         self._counts = np.array(new_counts)
+
+    def vis(self, height=7, width=20, braille=False, frame=True, color=None):
+        try:
+            from braille import horizontal_bar_chart
+        except:
+            warnings.warn("Can't visualize without the proper braille package", UserWarning)
+            return None
+        # each bin is half a character width, so tile until we get to <= width
+        counts = np.repeat(self._counts, max(width//(len(self._counts)//2),1))
+        chart = horizontal_bar_chart(counts, maxnchars=height,frame=frame,charheight=(4 if braille else 2),color=color)
+        return chart
 
 class Hist2D(Hist1D):
 

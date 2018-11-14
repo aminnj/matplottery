@@ -45,6 +45,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
         mpl_figure_params={}, mpl_legend_params={}, mpl_sig_params={},
         cms_type=None, lumi="-1",
+        do_log=False,
         ratio_range=[],
         do_bkg_syst=False,do_bkg_errors=False,
         xticks=[],
@@ -161,9 +162,13 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             **mpl_legend_params
             )
     legend.set_zorder(10)
-    ylims = ax_main.get_ylim()
-    ax_main.set_ylim([0.0,ylims[1]])
     ax_main.yaxis.get_offset_text().set_x(-0.095)
+
+    if do_log:
+        ax_main.set_yscale("log",nonposy="clip")
+    else:
+        ylims = ax_main.get_ylim()
+        ax_main.set_ylim([0.0,ylims[1]])
 
     if ax_main_callback:
         ax_main_callback(ax_main)
@@ -175,22 +180,24 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
     if do_ratio:
 
-        if ratio is not None:
-            ratios = ratio
-        else:
-            ratios = data/sum(bgs)
-
 
         mpl_opts_ratio = {
-                "yerr": ratios.errors,
                 "label": "Data/MC",
                 # "xerr": data_xerr,
                 }
-        if ratios.get_errors_up() is not None:
-            mpl_opts_ratio["yerr"] = [ratios.get_errors_down(),ratios.get_errors_up()]
-
         mpl_opts_ratio.update(mpl_data_hist)
         mpl_opts_ratio.update(mpl_ratio_params)
+
+        if ratio is not None:
+            ratios = ratio
+            mpl_opts_ratio["label"] = ratios.get_attr("label",mpl_opts_ratio["label"])
+            mpl_opts_ratio["color"] = ratios.get_attr("color",mpl_opts_ratio["color"])
+        else:
+            ratios = data/sum(bgs)
+
+        mpl_opts_ratio["yerr"] = ratios.errors
+        if ratios.get_errors_up() is not None:
+            mpl_opts_ratio["yerr"] = [ratios.get_errors_down(),ratios.get_errors_up()]
 
         ax_ratio.errorbar(ratios.get_bin_centers(),ratios.counts,**mpl_opts_ratio)
         ax_ratio.set_autoscale_on(False)

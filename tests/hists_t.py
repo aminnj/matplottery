@@ -2,7 +2,9 @@ import unittest
 
 import ROOT as r
 import numpy as np
-from matplottery.utils import Hist1D, Hist2D, fill_fast
+from matplottery.utils import Hist1D, Hist2D, fill_fast, nan_to_num
+
+np.set_printoptions(linewidth=120)
 
 class HistTest(unittest.TestCase):
 
@@ -45,6 +47,8 @@ class HistTest(unittest.TestCase):
         vals = np.random.normal(0,1,1000)
         h3 = Hist1D(vals,bins=bins)
 
+        self.assertNotEqual(h1,h2)
+        self.assertNotEqual(h2,h3)
         self.assertEqual(h1+h2+h3, sum([h1,h2,h3]))
 
     def test_1d_summing_weights(self):
@@ -57,11 +61,47 @@ class HistTest(unittest.TestCase):
         hr2_ = r.TH1F("hr2","hr2", len(bins)-1, bins)
         fill_fast(hr1_, vals1, weights=weights1)
         fill_fast(hr2_, vals2, weights=weights2)
-        hr1 = Hist1D(hr1_, no_overflow=True)
-        hr2 = Hist1D(hr2_, no_overflow=True)
-        hn1 = Hist1D(vals1,bins=bins, weights=weights1)
-        hn2 = Hist1D(vals2,bins=bins, weights=weights2)
-        self.assertEqual(hr1+hr2, hn1+hn2)
+        for no_overflow in [True,False]:
+            hr1 = Hist1D(hr1_, no_overflow=no_overflow)
+            hr2 = Hist1D(hr2_, no_overflow=no_overflow)
+            hn1 = Hist1D(vals1,bins=bins, weights=weights1, no_overflow=no_overflow)
+            hn2 = Hist1D(vals2,bins=bins, weights=weights2, no_overflow=no_overflow)
+            self.assertEqual(hr1+hr2, hn1+hn2)
+
+    def test_copy(self):
+        np.random.seed(42)
+        h1 = Hist1D(np.random.normal(0,5,100), bins=np.linspace(-3,3,10))
+        h2 = h1.copy()
+        # Contents are the same, but memory location/hash is different
+        self.assertEqual(h1,h2)
+        self.assertNotEqual(h1.__hash__(),h2.__hash__())
+
+    def test_idempotent(self):
+        np.random.seed(42)
+        h1 = Hist1D(np.random.normal(0,5,100), bins=np.linspace(-3,3,10))
+        h2 = Hist1D(h1)
+        self.assertEqual(h1,h2)
+
+    def test_extra(self):
+        np.random.seed(42)
+        h1 = Hist1D(np.random.normal(0,5,100), bins=np.linspace(-3,3,10),label="h1",color="k")
+        self.assertEqual(h1.get_attr("label"),"h1")
+        self.assertEqual(h1.get_attr("color"),"k")
+        h1.set_attr("label","h2")
+        self.assertEqual(h1.get_attr("label"),"h2")
+        h2 = Hist1D(h1,color="r")
+        self.assertEqual(h2.get_attr("label"),"h2")
+        self.assertEqual(h2.get_attr("color"),"r")
+
+    def test_overflow_integral(self):
+        # by default, overflow gets put into first and last bins, unless no_overflow is True
+        N = 100
+        h1 = Hist1D(np.random.normal(0,5,N), bins=[-5,0,5])
+        self.assertEqual(h1.get_integral(),N)
+        h1 = Hist1D(np.random.normal(0,5,N), bins=[-5,0,5],no_overflow=False)
+        self.assertEqual(h1.get_integral(),N)
+        h1 = Hist1D(np.random.normal(0,5,N), bins=[-5,0,5],no_overflow=True)
+        self.assertEqual(h1.get_integral()<N,True)
 
     def test_1d_rebinning(self):
         np.random.seed(42)
@@ -74,6 +114,52 @@ class HistTest(unittest.TestCase):
         int_after = h1.get_integral()
         self.assertEqual(int_before, int_after)
         self.assertEqual(nbins_after, nbins_before // nrebin)
+
+    def test_1d_binomial_errors(self):
+        bins = 1.0*np.array([0,3,6,9,12,15,18])
+
+        vals = 1.0*np.array([0,3,5,5,13])
+        weights = 1.0*np.array([1,1,1,1,1])
+        hrnum_ = r.TH1F("hrnum","", len(bins)-1, bins)
+        fill_fast(hrnum_, vals, weights=weights)
+
+        vals = 1.0*np.array([1,2,3,4,5,10,13,16])
+        weights = 1.0*np.array([1,1,1,1,1,1,1,1])
+        hrden_ = r.TH1F("hrden","", len(bins)-1, bins)
+        fill_fast(hrden_, vals, weights=weights)
+
+        teff = r.TEfficiency(hrnum_,hrden_)
+        errsup,errsdown = [], []
+        for ibin in range(1,hrnum_.GetNbinsX()+1):
+            cent = teff.GetEfficiency(ibin)
+            errup = teff.GetEfficiencyErrorUp(ibin)
+            errdown = teff.GetEfficiencyErrorLow(ibin)
+            errsup.append(errup)
+            errsdown.append(errdown)
+
+        hfromroot = Hist1D(hrnum_)/Hist1D(hrden_)
+        hfromroot._errors_up = np.array(errsup)
+        hfromroot._errors_down = np.array(errsdown)
+        hfromroot._fix_nan()
+        hfromroot._errors *= 0.
+
+        hmine = Hist1D(hrnum_).divide(Hist1D(hrden_),binomial=True)
+        hmine._errors *= 0.
+        hmine._fix_nan()
+
+        self.assertEqual(hfromroot,hmine)
+
+    def test_1d_divide_hist(self):
+        bins = 1.0*np.array([0,3,6,9,12,15])
+        vals = 1.0*np.array([1,2,3,4,5,10,13])
+        weights = 1.0*np.array([1,1,1,2,2,1,1])
+        hr_ = r.TH1F("hr","hr", len(bins)-1, bins)
+        fill_fast(hr_, vals, weights=weights)
+        hr_.Divide(hr_)
+        hn = Hist1D(vals,bins=bins, weights=weights)
+        hn /= hn
+        hn._fix_nan()
+        self.assertEqual(Hist1D(hr_),hn)
 
     def test_2d_nonuniform_binning(self):
 
