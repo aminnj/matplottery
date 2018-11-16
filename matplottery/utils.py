@@ -193,16 +193,19 @@ class Hist1D(object):
         self._errors = np.sqrt(self._errors**2. + counts)
 
     @property
-    def errors(self):
-        return self._errors
+    def errors(self): return self._errors
+    @errors.setter
+    def errors(self, vals): self._errors = vals
 
     @property
-    def counts(self):
-        return self._counts
+    def counts(self): return self._counts
+    @counts.setter
+    def counts(self, vals): self._counts = vals
 
     @property
-    def edges(self):
-        return self._edges
+    def edges(self): return self._edges
+    @edges.setter
+    def edges(self, vals): self._edges = vals
 
     def get_errors(self):
         return self._errors
