@@ -265,7 +265,7 @@ class HistTest(unittest.TestCase):
         h = uproot.open("tmpfile.root")["hr"]
         hu = Hist1D(h)
         self.assertEqual(hu, hr)
-        os.system("rm -f tempfile.root")
+        os.system("rm -f tmpfile.root")
 
 
 if __name__ == "__main__":
