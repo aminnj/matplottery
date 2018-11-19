@@ -4,3 +4,5 @@
 rm -f dist/*
 python setup.py bdist_wheel
 python -m twine upload dist/*
+# note, can do `pip install -e .` in this folder to install a "development" version of the package
+# so that modifications in this folder are reflected in the systemwide `import matplottery`

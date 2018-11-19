@@ -13,4 +13,3 @@ with the usual `numpy.histogram()`.
 
 ### Unit tests
 `python -m unittest discover -s tests -p "*.py"`
-
