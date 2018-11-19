@@ -150,7 +150,7 @@ class Hist1D(object):
         self._edges = edges
 
     def init_uproot(self, obj, **kwargs):
-        (self._counts, self._edges) = obj.numpy
+        (self._counts, self._edges) = obj.numpy()
         self._errors = np.sqrt(obj._fSumw2)[1:-1]
         self._edges = np.array(self._edges)
         self._counts = np.array(self._counts)

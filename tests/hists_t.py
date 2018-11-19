@@ -3,6 +3,8 @@ import unittest
 import ROOT as r
 import numpy as np
 from matplottery.utils import Hist1D, Hist2D, fill_fast, nan_to_num
+import uproot
+import os
 
 np.set_printoptions(linewidth=120)
 
@@ -246,6 +248,24 @@ class HistTest(unittest.TestCase):
 
         self.assertEqual(rx,nx)
         self.assertEqual(ry,ny)
+
+    def test_read_uproot(self):
+
+        # Write a temporary file
+        fr = r.TFile("tmpfile.root","RECREATE")
+        fr.cd()
+        bins = 1.0*np.array([0,3,6,9,12,15])
+        vals = 1.0*np.array([1,2,3,4,5,10,13])
+        weights = 1.0*np.array([1,1,1,2,2,1,1])
+        hr_ = r.TH1F("hr","hr", len(bins)-1, bins)
+        fill_fast(hr_, vals, weights=weights)
+        hr = Hist1D(hr_)
+        hr_.Write()
+        fr.Close()
+        h = uproot.open("tmpfile.root")["hr"]
+        hu = Hist1D(h)
+        self.assertEqual(hu, hr)
+        os.system("rm -f tempfile.root")
 
 
 if __name__ == "__main__":
