@@ -8,9 +8,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='matplottery',
-    version='1.0.2',
+    version='1.0.3',
     description='Nicer histograms with numpy and plotting with matplotlib',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url='https://github.com/aminnj/matplottery',
     author='Nick Amin',
     author_email='amin.nj@gmail.com',

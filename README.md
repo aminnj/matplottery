@@ -1,5 +1,7 @@
 # matplottery
 
+[![PyPI version](https://badge.fury.io/py/matplottery.svg)](https://badge.fury.io/py/matplottery)
+
 Easy histogram creation/plotting with matplotlib, including importing of ROOT
 histograms with vanilla pyROOT or uproot. Plain numpy arrays are also supported
 with the usual `numpy.histogram()`.
