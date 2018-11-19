@@ -18,7 +18,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
-    py_modules=["matplottery"],
+    packages = find_packages(exclude = ["tests","examples"]),
     test_suite="tests",
     install_requires=[
         "matplotlib>2.0",

@@ -1,13 +1,16 @@
 # matplottery
 
-Nice and simple histogram plotting with matplotlib, including easy importing of ROOT histograms. See the following sections for examples.
+Easy histogram creation/plotting with matplotlib, including importing of ROOT
+histograms with vanilla pyROOT or uproot. Plain numpy arrays are also supported
+with the usual `numpy.histogram()`.
+
+### Install
+`pip install matplottery`
+
 
 ### Examples
-See the examples folder for a notebook with...examples.
-
+[Example notebook](examples/examples.ipynb)
 
 ### Unit tests
-```bash
-python -m unittest discover -s tests -p "*.py"
-```
+`python -m unittest discover -s tests -p "*.py"`
 
