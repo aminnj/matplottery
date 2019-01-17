@@ -44,6 +44,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
         mpl_figure_params={}, mpl_legend_params={}, mpl_sig_params={},
+        mpl_xtick_params={},
         cms_type=None, lumi="-1",
         do_log=False,
         ratio_range=[],
@@ -103,7 +104,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     if do_ratio:
         fig, (ax_main,ax_ratio) = plt.subplots(2,1, sharex=True, gridspec_kw={'height_ratios':[9, 2],"top":0.94},**mpl_figure_params)
     else:
-        fig, ax_main = plt.subplots(1,1,**mpl_figure_params)
+        fig, ax_main = plt.subplots(1,1,gridspec_kw={"top":0.94},**mpl_figure_params)
 
     _, _, patches = ax_main.hist(centers,bins=bins,weights=weights,label=labels,color=colors,**mpl_bg_hist)
     # for p in patches:
@@ -143,7 +144,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ax_main.errorbar(
                 data.get_bin_centers()[select],
                 data.counts[select],
-                yerr=data.errors[select],
+                yerr=(data.errors[select] if data.get_errors_up() is None else [data.get_errors_down()[select],data.get_errors_up()[select]]),
                 xerr=data_xerr,
                 label=data.get_attr("label", "Data"),
                 zorder=6, **mpl_data_hist)
@@ -163,13 +164,12 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             **mpl_legend_params
             )
     legend.set_zorder(10)
-    ax_main.yaxis.get_offset_text().set_x(-0.095)
-
     if do_log:
         ax_main.set_yscale("log",nonposy="clip")
     else:
         ylims = ax_main.get_ylim()
         ax_main.set_ylim([0.0,ylims[1]])
+    ax_main.yaxis.get_offset_text().set_x(-0.095)
 
     if ax_main_callback:
         ax_main_callback(ax_main)
@@ -181,20 +181,28 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
     if do_ratio:
 
-
         mpl_opts_ratio = {
                 "label": "Data/MC",
                 # "xerr": data_xerr,
                 }
-        mpl_opts_ratio.update(mpl_data_hist)
-        mpl_opts_ratio.update(mpl_ratio_params)
-
+        # If user specified a ratio, use it (now call it ratios with an s)
         if ratio is not None:
             ratios = ratio
             mpl_opts_ratio["label"] = ratios.get_attr("label",mpl_opts_ratio["label"])
             mpl_opts_ratio["color"] = ratios.get_attr("color",mpl_opts_ratio["color"])
         else:
-            ratios = data/sum(bgs)
+            # Otherwise, if they don't want bkg systs, just divide
+            # If they do, zero out bkg error and divide, to preserve only data error
+            if not do_bkg_syst:
+                ratios = data/sbgs
+            else:
+                # if we show bkg syst in ratio, we don't want to "double count" the bkg err in the data/sum(bgs)!
+                zerobgs = sbgs.copy()
+                zerobgs._errors *= 0.
+                ratios = data/zerobgs
+
+        mpl_opts_ratio.update(mpl_data_hist)
+        mpl_opts_ratio.update(mpl_ratio_params)
 
         mpl_opts_ratio["yerr"] = ratios.errors
         if ratios.get_errors_up() is not None:
@@ -220,14 +228,23 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
 
         if len(xticks):
+
             ax_ratio.xaxis.set_ticks(ratios.get_bin_centers())
-            ax_ratio.set_xticklabels(xticks, horizontalalignment='center',fontsize=9)
+            params = dict(horizontalalignment='center',fontsize=7,rotation=90)
+            params.update(mpl_xtick_params)
+            ax_ratio.set_xticklabels(xticks, **params)
 
         if ax_ratio_callback:
             ax_ratio_callback(ax_ratio)
 
     else:
         ax_main.set_xlabel(xlabel, horizontalalignment="right", x=1.)
+
+        if len(xticks):
+            ax_main.xaxis.set_ticks(sbgs.get_bin_centers())
+            params = dict(horizontalalignment='center',fontsize=12)
+            params.update(mpl_xtick_params)
+            ax_main.set_xticklabels(xticks, **params)
 
 
     if filename:
@@ -241,20 +258,20 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             os.system("mkdir -p {}".format(dirname))
 
         fig.savefig(filename)
-        fig.savefig(filename.replace(".pdf",".png"))
+        if ".pdf" in filename:
+            fig.savefig(filename.replace(".pdf",".png"))
 
-    totransform = []
-    for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
-        totransform.append([ep[0],0.])
-        totransform.append([ep[1],count])
-    totransform = np.array(totransform)
-    disp_coords = ax_main.transData.transform(totransform)
-    fig_coords = fig.transFigure.inverted().transform(disp_coords)
-
-    to_ret = [fig, fig.axes]
     if return_bin_coordinates:
-        to_ret.append(fig_coords)
-    return to_ret
+        totransform = []
+        for count,ep in zip(sbgs.counts,zip(sbgs.edges[:-1],sbgs.edges[1:])):
+            totransform.append([ep[0],0.])
+            totransform.append([ep[1],count])
+        totransform = np.array(totransform)
+        disp_coords = ax_main.transData.transform(totransform)
+        fig_coords = fig.transFigure.inverted().transform(disp_coords)
+        return [fig, fig.axes, fig_coords]
+    else:
+        return [fig, fig.axes]
 
 def plot_2d(hist,
         title="", xlabel="", ylabel="", filename="",
@@ -262,7 +279,7 @@ def plot_2d(hist,
         mpl_figure_params={}, mpl_legend_params={},
         cms_type=None, lumi="-1",
         do_log=False, do_projection=False, do_profile=False,
-        cmap="PuBu_r", do_colz=False, colz_fmt=".1f",
+        cmap="PuBu_r", do_colz=False, colz_fmt=".1f", colz_doerror=True, colz_sizemultiplier=1.,
         logx=False, logy=False,
         xticks=[], yticks=[],
         zrange=[],
@@ -365,7 +382,10 @@ def plot_2d(hist,
             if bv < 1.0e-6 and be < 1.0e-6:
                 buff = "0"
             else:
-                buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt.replace("e","f"))).format(bv,pcterr)
+                if colz_doerror:
+                    buff = ("{:%s}\n($\pm${:%s}%%)" % (colz_fmt,colz_fmt.replace("e","f"))).format(bv,pcterr)
+                else:
+                    buff = ("{:%s}" % (colz_fmt)).format(bv)
             # return buff.replace("e-0","e-")
             return buff
 
@@ -378,16 +398,17 @@ def plot_2d(hist,
                 fs_ = min(5.5*fxw*fs,14)
             else:
                 fs_ = 2.5*fs
+            fs_ *= colz_sizemultiplier
             color = "w" if (utils.compute_darkness(*val_to_rgba(bv)) > 0.45) else "k"
-            if bv < 0.01: continue
+            # if bv < 0.01: continue
             ax.text(x,y,val_to_text(bv,be),
                     color=color, ha="center", va="center", fontsize=fs_,
                     wrap=True)
 
     if do_marginal:
-        fig.colorbar(mappable, cax=axz)
+        plt.colorbar(mappable, cax=axz)
     else:
-        fig.colorbar(mappable)
+        plt.colorbar(mappable)
 
     if do_marginal:
         if cms_type is not None:
@@ -398,18 +419,17 @@ def plot_2d(hist,
             add_cms_info(ax, cms_type, lumi, xtype=0.10)
         ax.set_title(title)
 
-
     if len(xticks):
-        # ax.xaxis.set_ticklabels(xticks)
         ax.xaxis.set_ticks(xticks)
-        # ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        # ax.xaxis.set_ticklabels(xticks)
+        if all(isinstance(x,(int,float)) for x in xticks):
+            ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
     if len(yticks):
-        # ax.yaxis.set_ticklabels(yticks)
         ax.yaxis.set_ticks(yticks)
-        # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        # ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        # ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3))
-        # ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(base=1))
+        # ax.yaxis.set_ticklabels(yticks)
+        if all(isinstance(x,(int,float)) for x in yticks):
+            ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+            # ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(base=3))
 
     if filename:
 
