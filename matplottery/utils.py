@@ -177,6 +177,9 @@ class Hist1D(object):
         if "label" in kwargs:
             self._extra["label"] = kwargs["label"]
             del kwargs["label"]
+        if "dummy" in kwargs:
+            self._extra["dummy"] = kwargs["dummy"]
+            del kwargs["dummy"]
         return kwargs
 
     def fill_random(self, pdf="gaus", N=1000):
@@ -322,6 +325,15 @@ class Hist1D(object):
                     (self._errors/other._counts)**2.0 +
                     (other._errors*self._counts/(other._counts)**2.0)**2.0
                     )**0.5
+            if self._errors_up is not None:
+                hnew._errors_up = (
+                        (self._errors_up/other._counts)**2.0 +
+                        (other._errors*self._counts/(other._counts)**2.0)**2.0
+                        )**0.5
+                hnew._errors_down = (
+                        (self._errors_down/other._counts)**2.0 +
+                        (other._errors*self._counts/(other._counts)**2.0)**2.0
+                        )**0.5
         else:
             bothzero = (self._counts==0) & (other._counts==0)
             hnew._errors_down, hnew._errors_up = clopper_pearson_error(self._counts,other._counts)
@@ -401,6 +413,23 @@ class Hist1D(object):
         self._edges = np.array(new_edges)
         self._errors = np.array(new_errors2)**0.5
         self._counts = np.array(new_counts)
+
+    def convert_to_poisson_errors(self, use_root=False,alpha=1-0.6827):
+        """
+        set up and down errors to 1 sigma confidence intervals for poisson counts
+        """
+        if use_root:
+            import ROOT as r
+            lows = np.array(map(lambda N: (0 if N==0 else r.Math.gamma_quantile(alpha/2,N,1.)), self._counts))
+            highs = np.array(map(lambda N: r.Math.gamma_quantile(1-alpha/2,N+1,1), self._counts))
+        else:
+            from scipy.stats import gamma
+            lows = np.nan_to_num(gamma.ppf(alpha/2,np.array(self._counts)))
+            highs = np.nan_to_num(gamma.ppf(1.-alpha/2,np.array(self._counts)+1))
+        ups = highs-self._counts
+        downs = self._counts-lows
+        self._errors_up = ups
+        self._errors_down = downs
 
     def vis(self, height=7, width=20, braille=False, frame=True, fancy=True, color=None):
         try:
