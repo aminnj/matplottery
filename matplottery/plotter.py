@@ -48,6 +48,27 @@ def fill_between(ax,double_edges,his,los,**kwargs):
             **kwargs
             )
 
+def plot_hist(h,ax=None,**kwargs):
+    if not ax: ax = plt.gca()
+    kwargs["fmt"] = kwargs.get("fmt","o")
+    kwargs["linewidth"] = kwargs.get("linewidth",1.5)
+    kwargs["markersize"] = kwargs.get("marksersize",5.0)
+    if h.get_attr("color"): kwargs["color"] = h.get_attr("color")
+    if h.get_attr("label"): kwargs["label"] = h.get_attr("label")
+    do_text = kwargs.pop("text",False)
+    counts = h.counts
+    yerrs = h.errors
+    xerrs = 0.5*h.get_bin_widths()
+    centers = h.get_bin_centers()
+    width = centers[1]-centers[0]
+    good = counts != 0.
+    patches = ax.errorbar(centers[good],counts[good],xerr=xerrs[good],yerr=yerrs[good],**kwargs)
+    if do_text:
+        for x,y,yerr in zip(centers[good],counts[good],yerrs[good]):
+            # ax.text(x,y+yerr,"{:.2f}".format(y), horizontalalignment="center",verticalalignment="bottom", fontsize=12, color=patches[0].get_color())
+            ax.text(x-width*0.45,y,"{:.2f}".format(y), horizontalalignment="left",verticalalignment="bottom", fontsize=10, color=patches[0].get_color())
+    return patches
+
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},

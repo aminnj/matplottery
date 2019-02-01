@@ -8,7 +8,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='matplottery',
-    version='1.0.3',
+    version='1.0.4',
     description='Nicer histograms with numpy and plotting with matplotlib',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -24,5 +24,6 @@ setup(
     install_requires=[
         "matplotlib>2.0",
         "numpy",
+        "uproot>3.0",
         ],
 )
