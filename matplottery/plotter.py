@@ -20,7 +20,8 @@ def set_defaults():
     # rcParams['mathtext.bf'] = 'Liberation Sans:bold'
     rcParams['legend.fontsize'] = 11
     rcParams['legend.labelspacing'] = 0.2
-    # rcParams['axes.xmargin'] = 0.0 # rootlike, no extra padding within x axis
+    rcParams['hatch.linewidth'] = 0.5  # https://stackoverflow.com/questions/29549530/how-to-change-the-linewidth-of-hatch-in-matplotlib
+    rcParams['axes.xmargin'] = 0.0 # rootlike, no extra padding within x axis
     rcParams['axes.labelsize'] = 'x-large'
     rcParams['axes.formatter.use_mathtext'] = True
     rcParams['legend.framealpha'] = 0.65
@@ -40,10 +41,18 @@ def add_cms_info(ax, typ="Simulation", lumi="75.0", xtype=0.09):
     ax.text(xtype, 1.01,typ, horizontalalignment='left', verticalalignment='bottom', transform = ax.transAxes, style="italic", size="large")
     ax.text(0.99, 1.01,"%s fb${}^{-1}$ (13 TeV)" % (lumi), horizontalalignment='right', verticalalignment='bottom', transform = ax.transAxes, size="large")
 
+def fill_between(ax,double_edges,his,los,**kwargs):
+    return ax.fill_between(double_edges,his,los, step="mid",
+            hatch="///////", facecolor="none",
+            edgecolor=(0.4,0.4,0.4), linewidth=0.0, linestyle='-',
+            **kwargs
+            )
+
 def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         title="", xlabel="", ylabel="", filename="",
         mpl_hist_params={}, mpl_data_params={}, mpl_ratio_params={},
         mpl_figure_params={}, mpl_legend_params={}, mpl_sig_params={},
+        mpl_title_params={},
         mpl_xtick_params={},
         cms_type=None, lumi="-1",
         do_log=False,
@@ -134,8 +143,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         double_edges = np.repeat(sbgs.edges,2,axis=0)[1:-1]
         his = np.repeat(tot_vals+tot_errs,2)
         los = np.repeat(tot_vals-tot_errs,2)
-        ax_main.fill_between(double_edges,his,los, step="mid",
-                alpha=0.4, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=0.5, linestyle='-', zorder=5)
+        # https://matplotlib.org/api/_as_gen/matplotlib.pyplot.fill_between.html
+        fill_between(ax_main,double_edges,his,los,zorder=5)
 
     if data:
         data_xerr = None
@@ -151,14 +160,14 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     if sigs:
         for sig in sigs:
             if mpl_sig_params.get("hist",True):
-                ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color="r",histtype="step", label=sig.get_attr("label","sig"))
+                ax_main.hist(sig.get_bin_centers(),bins=bins,weights=sig.counts,color=sig.get_attr("color"),histtype="step", label=sig.get_attr("label","sig"))
                 ax_main.errorbar(sig.get_bin_centers(),sig.counts,yerr=sig.errors,xerr=None,markersize=1,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"))
             else:
                 select = sig.counts != 0
                 ax_main.errorbar(sig.get_bin_centers()[select],sig.counts[select],yerr=sig.errors[select],xerr=None,markersize=3,linewidth=1.5, linestyle="",marker="o",color=sig.get_attr("color"), label=sig.get_attr("label","sig"))
 
     ax_main.set_ylabel(ylabel, horizontalalignment="right", y=1.)
-    ax_main.set_title(title)
+    ax_main.set_title(title,**mpl_title_params)
     legend = ax_main.legend(
             handler_map={ matplotlib.patches.Patch: utils.TextPatchHandler(label_map) },
             **mpl_legend_params
@@ -182,7 +191,8 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
     if do_ratio:
 
         mpl_opts_ratio = {
-                "label": "Data/MC",
+                "label": "Data/bkg.",
+                "color": "k",
                 # "xerr": data_xerr,
                 }
         # If user specified a ratio, use it (now call it ratios with an s)
@@ -221,8 +231,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             double_edges = np.repeat(ratios.edges,2,axis=0)[1:-1]
             his = np.repeat(1.+np.abs(sbgs.get_relative_errors()),2)
             los = np.repeat(1.-np.abs(sbgs.get_relative_errors()),2)
-            ax_ratio.fill_between(double_edges, his, los, step="mid",
-                    alpha=0.4, facecolor='#cccccc', edgecolor='#aaaaaa', linewidth=0.5, linestyle='-')
+            fill_between(ax_ratio,double_edges,his,los)
 
         ax_ratio.set_ylabel(mpl_opts_ratio["label"], horizontalalignment="right", y=1.)
         ax_ratio.set_xlabel(xlabel, horizontalalignment="right", x=1.)
