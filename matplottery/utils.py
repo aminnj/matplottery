@@ -338,11 +338,12 @@ class Hist1D(object):
             bothzero = (self._counts==0) & (other._counts==0)
             hnew._errors_down, hnew._errors_up = clopper_pearson_error(self._counts,other._counts)
             hnew._counts = self._counts/other._counts
-            hnew._errors = 0.*hnew._counts
+            # hnew._errors = 0.*hnew._counts
             # these are actually the positions for down and up, but we want the errors
             # wrt to the central value
             hnew._errors_up = hnew._errors_up - hnew._counts
             hnew._errors_down = hnew._counts - hnew._errors_down
+            hnew._errors = 0.5*(hnew._errors_down + hnew._errors_up) # nominal errors are avg of up and down
             # For consistency with TEfficiency, up error is 1 if we have 0/0
             hnew._errors_up[bothzero] = 1.
         return hnew
