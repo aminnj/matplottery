@@ -27,6 +27,39 @@ def clopper_pearson_error(passed, total, level=0.6827):
     high = scipy.stats.beta.ppf(1 - alpha, passed+1, total-passed)
     return low, high
 
+def poisson_errors(obs,alpha=1-0.6827):
+    """
+    Return poisson low and high values for a series of data observations
+    """
+    from scipy.stats import gamma
+    lows = np.nan_to_num(gamma.ppf(alpha/2,np.array(obs)))
+    highs = np.nan_to_num(gamma.ppf(1.-alpha/2,np.array(obs)+1))
+    return lows, highs
+
+def binomial_obs_z(data,bkg,bkgerr,use_root=False, gaussian_fallback=True):
+    """
+    Calculate pull values according to
+    https://root.cern.ch/doc/v606/NumberCountingUtils_8cxx_source.html#l00137
+    The scipy version is vectorized, so you can feed in arrays
+    If `gaussian_fallback` return a simple gaussian pull when data count is 0,
+    otherwise both ROOT and scipy will return inf/nan.
+    """
+    if use_root:
+        if data < 1.e-6: return (data/bkg-1.)/((data+bkgerr**2.)**0.5)
+        import ROOT as r
+        return r.RooStats.NumberCountingUtils.BinomialObsZ(data,bkg,bkgerr/bkg)
+    else:
+        from scipy.special import betainc
+        import scipy.stats as st
+        tau = 1./bkg/(bkgerr/bkg)**2.
+        auxinf = bkg*tau
+        v = betainc(data,auxinf+1,1./(1.+tau))
+        z = st.norm.ppf(1-v)
+        if (data<1.e-6).sum():
+            zeros = (data<1.e-6)
+            z[zeros] = -(bkg[zeros])/np.hypot(poisson_errors(data[zeros])[1],bkgerr[zeros])
+        return z
+
 def fill_fast(hist, xvals, yvals=None, weights=None):
     """
     partially stolen from root_numpy implementation
@@ -424,13 +457,12 @@ class Hist1D(object):
             lows = np.array(map(lambda N: (0 if N==0 else r.Math.gamma_quantile(alpha/2,N,1.)), self._counts))
             highs = np.array(map(lambda N: r.Math.gamma_quantile(1-alpha/2,N+1,1), self._counts))
         else:
-            from scipy.stats import gamma
-            lows = np.nan_to_num(gamma.ppf(alpha/2,np.array(self._counts)))
-            highs = np.nan_to_num(gamma.ppf(1.-alpha/2,np.array(self._counts)+1))
+            lows, highs = poisson_errors(self._counts,alpha=alpha)
         ups = highs-self._counts
         downs = self._counts-lows
         self._errors_up = ups
         self._errors_down = downs
+    poissonify = convert_to_poisson_errors
 
     def vis(self, height=7, width=20, braille=False, frame=True, fancy=True, color=None):
         try:
@@ -442,6 +474,14 @@ class Hist1D(object):
         counts = np.repeat(self._counts, max(width//(len(self._counts)//2),1))
         chart = horizontal_bar_chart(counts, maxnchars=height,frame=frame,charheight=(4 if braille else 2),color=color, fancy=fancy)
         return chart
+
+    def to_root(self,name,title=""):
+        import ROOT as r
+        h = r.TH1D(name,title,len(self._counts),self._edges[0],self._edges[-1])
+        for ibin,(count,error) in enumerate(zip(self._counts,self._errors)):
+            h.SetBinContent(ibin+1,count)
+            h.SetBinError(ibin+1,error)
+        return h
 
 class Hist2D(Hist1D):
 
