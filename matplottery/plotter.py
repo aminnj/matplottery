@@ -79,7 +79,7 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
         do_log=False,
         ratio_range=[],
         do_stack=True,
-        do_bkg_syst=False,do_bkg_errors=False,
+        do_bkg_syst=False,override_bkg_syst=None,do_bkg_errors=False,
         xticks=[],
         return_bin_coordinates=False,
         ax_main_callback=None,
@@ -159,9 +159,12 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
 
 
     if do_bkg_syst:
-        tot_vals = sbgs.counts
-        tot_errs = sbgs.errors
         double_edges = np.repeat(sbgs.edges,2,axis=0)[1:-1]
+        tot_vals = sbgs.counts
+        if override_bkg_syst is not None:
+            tot_errs = override_bkg_syst
+        else:
+            tot_errs = sbgs.errors
         his = np.repeat(tot_vals+tot_errs,2)
         los = np.repeat(tot_vals-tot_errs,2)
         # https://matplotlib.org/api/_as_gen/matplotlib.pyplot.fill_between.html
@@ -249,9 +252,13 @@ def plot_stack(bgs=[],data=None,sigs=[], ratio=None,
             ax_ratio.set_ylim(ratio_range)
 
         if do_bkg_syst:
+            if override_bkg_syst is not None:
+                rel_errs = np.abs(override_bkg_syst/sbgs.counts)
+            else:
+                rel_errs = np.abs(sbgs.get_relative_errors())
             double_edges = np.repeat(ratios.edges,2,axis=0)[1:-1]
-            his = np.repeat(1.+np.abs(sbgs.get_relative_errors()),2)
-            los = np.repeat(1.-np.abs(sbgs.get_relative_errors()),2)
+            his = np.repeat(1.+rel_errs,2)
+            los = np.repeat(1.-rel_errs,2)
             fill_between(ax_ratio,double_edges,his,los)
 
         ax_ratio.set_ylabel(mpl_opts_ratio["label"], horizontalalignment="right", y=1.)
