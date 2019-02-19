@@ -51,10 +51,12 @@ def binomial_obs_z(data,bkg,bkgerr,use_root=False, gaussian_fallback=True):
     else:
         from scipy.special import betainc
         import scipy.stats as st
-        tau = 1./bkg/(bkgerr/bkg)**2.
-        auxinf = bkg*tau
-        v = betainc(data,auxinf+1,1./(1.+tau))
-        z = st.norm.ppf(1-v)
+        z = np.ones(len(data))
+        nonzeros = (data>1.e-6)
+        tau = 1./bkg[nonzeros]/(bkgerr[nonzeros]/bkg[nonzeros])**2.
+        auxinf = bkg[nonzeros]*tau
+        v = betainc(data[nonzeros],auxinf+1,1./(1.+tau))
+        z[nonzeros] = st.norm.ppf(1-v)
         if (data<1.e-6).sum():
             zeros = (data<1.e-6)
             z[zeros] = -(bkg[zeros])/np.hypot(poisson_errors(data[zeros])[1],bkgerr[zeros])
@@ -126,7 +128,10 @@ class Hist1D(object):
         if "ROOT." in tstr:
             self.init_root(obj,**kwargs)
         elif "uproot" in tstr:
-            self.init_uproot(obj,**kwargs)
+            if "TGraphAsymm" in tstr:
+                self.init_uproot_tgraph(obj,**kwargs)
+            else:
+                self.init_uproot(obj,**kwargs)
         elif "ndarray" in tstr or "list" in tstr:
             self.init_numpy(obj,**kwargs)
         elif "Hist1D" in tstr:
@@ -203,6 +208,20 @@ class Hist1D(object):
         if len(self._errors) == 0:
             self._errors = self._counts**0.5
 
+    def init_uproot_tgraph(self, obj, **kwargs):
+        xvals = obj.xvalues
+        yvals = obj.yvalues
+        yerrdown = obj.yerrorslow
+        yerrup = obj.yerrorshigh
+        lows = xvals-obj.xerrorslow
+        highs = xvals+obj.xerrorshigh
+        edges = np.concatenate([lows,highs[-1:]])
+        self._counts = yvals
+        self._edges = edges
+        self._errors = 0.5*(yerrup+yerrdown)
+        self._errors_up = yerrup
+        self._errors_down = yerrdown
+
     def init_extra(self, **kwargs):
         if "color" in kwargs:
             self._extra["color"] = kwargs["color"]
@@ -227,6 +246,17 @@ class Hist1D(object):
         counts, _ = np.histogram(vals, bins=self._edges)
         self._counts += counts
         self._errors = np.sqrt(self._errors**2. + counts)
+
+    def restrict_bins(self, indices):
+        """
+        Modifies edges,counts,errors to keep only bins specified by `indices`
+        e.g., h.restrict_bins(range(3)) will delete all but the first 3 bins, in place
+        """
+        self._edges = np.concatenate([self._edges[indices],[self._edges[indices[-1]+1]]])
+        self._counts = self._counts[indices]
+        self._errors = self._errors[indices]
+        if self._errors_up is not None: self._errors_up = self._errors_up[indices]
+        if self._errors_down is not None: self._errors_down = self._errors_down[indices]
 
     @property
     def errors(self): return self._errors
