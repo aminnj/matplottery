@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import os
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
